@@ -49,6 +49,12 @@ const docs = [
     path: "docs/pressure-control.md",
     summary: "速い寄せの中で、受け入れ、外を見て、次に関わる。",
   },
+  {
+    slug: "daily-pressure-training",
+    title: "日常の小さなプレッシャー訓練",
+    path: "docs/daily-pressure-training.md",
+    summary: "小さな約束を守り、プレッシャーはあるものとして扱う。",
+  },
 ];
 
 const elements = {
