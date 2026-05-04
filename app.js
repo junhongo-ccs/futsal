@@ -2,6 +2,12 @@ const storageKey = "futsal-state-records-v1";
 const draftStorageKey = "futsal-state-draft-v1";
 
 const elements = {
+  formView: document.querySelector("#formView"),
+  recordsView: document.querySelector("#recordsView"),
+  detailView: document.querySelector("#detailView"),
+  newRecordNav: document.querySelector("#newRecordNav"),
+  recordsNav: document.querySelector("#recordsNav"),
+  backToRecordsButton: document.querySelector("#backToRecordsButton"),
   canvas: document.querySelector("#stateChart"),
   afterCanvas: document.querySelector("#afterStateChart"),
   bodyScore: document.querySelector("#bodyScore"),
@@ -13,7 +19,7 @@ const elements = {
   afterBodyValueLabel: document.querySelector("#afterBodyValueLabel"),
   afterMindValueLabel: document.querySelector("#afterMindValueLabel"),
   deltaLabel: document.querySelector("#deltaLabel"),
-  recordDate: document.querySelector("#recordDate"),
+  recordDateTime: document.querySelector("#recordDateTime"),
   stateNote: document.querySelector("#stateNote"),
   afterNote: document.querySelector("#afterNote"),
   bodyAction: document.querySelector("#bodyAction"),
@@ -29,6 +35,7 @@ const elements = {
   exportJsonButton: document.querySelector("#exportJsonButton"),
   records: document.querySelector("#records"),
   recordCount: document.querySelector("#recordCount"),
+  recordDetail: document.querySelector("#recordDetail"),
 };
 
 const ctx = elements.canvas.getContext("2d");
@@ -37,13 +44,29 @@ const afterCtx = elements.afterCanvas.getContext("2d");
 let records = loadRecords();
 let draftTimer;
 
-function today() {
-  return new Date().toISOString().slice(0, 10);
+function nowDateTimeLocal() {
+  const date = new Date();
+  date.setSeconds(0, 0);
+  const offset = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function normalizeRecord(record) {
+  const dateTime = record.dateTime || (record.date ? `${record.date}T00:00` : nowDateTimeLocal());
+  return {
+    ...record,
+    dateTime,
+    date: record.date || dateTime.slice(0, 10),
+    afterBodyScore: record.afterBodyScore ?? record.bodyScore,
+    afterMindScore: record.afterMindScore ?? record.mindScore,
+    bodyDelta: record.bodyDelta ?? (record.afterBodyScore ?? record.bodyScore) - record.bodyScore,
+    mindDelta: record.mindDelta ?? (record.afterMindScore ?? record.mindScore) - record.mindScore,
+  };
 }
 
 function loadRecords() {
   try {
-    return JSON.parse(localStorage.getItem(storageKey)) || [];
+    return (JSON.parse(localStorage.getItem(storageKey)) || []).map(normalizeRecord);
   } catch {
     return [];
   }
@@ -54,9 +77,11 @@ function saveRecords() {
 }
 
 function getFormData() {
+  const dateTime = elements.recordDateTime.value || nowDateTimeLocal();
   return {
     id: crypto.randomUUID(),
-    date: elements.recordDate.value || today(),
+    dateTime,
+    date: dateTime.slice(0, 10),
     bodyScore: Number(elements.bodyScore.value),
     mindScore: Number(elements.mindScore.value),
     afterBodyScore: Number(elements.afterBodyScore.value),
@@ -76,7 +101,7 @@ function getFormData() {
 
 function getDraftData() {
   return {
-    date: elements.recordDate.value || today(),
+    dateTime: elements.recordDateTime.value || nowDateTimeLocal(),
     bodyScore: elements.bodyScore.value,
     mindScore: elements.mindScore.value,
     afterBodyScore: elements.afterBodyScore.value,
@@ -94,7 +119,7 @@ function getDraftData() {
 
 function setFormData(data) {
   if (!data) return;
-  elements.recordDate.value = data.date || today();
+  elements.recordDateTime.value = data.dateTime || (data.date ? `${data.date}T00:00` : nowDateTimeLocal());
   elements.bodyScore.value = data.bodyScore ?? "5";
   elements.mindScore.value = data.mindScore ?? "5";
   elements.afterBodyScore.value = data.afterBodyScore ?? "5";
@@ -139,8 +164,8 @@ function showSaveStatus(message) {
   elements.saveStatus.textContent = message;
 }
 
-function setDefaultDate() {
-  elements.recordDate.value = today();
+function setDefaultDateTime() {
+  elements.recordDateTime.value = nowDateTimeLocal();
 }
 
 function updateScoreLabels() {
@@ -162,9 +187,22 @@ function formatDelta(value) {
   return String(value);
 }
 
+function formatDateTime(value) {
+  if (!value) return "";
+  const [date = "", time = ""] = value.split("T");
+  return `${date.replaceAll("-", "/")} ${time}`;
+}
+
+function sortRecords(list) {
+  return [...list].sort((a, b) => {
+    const byDateTime = (b.dateTime || "").localeCompare(a.dateTime || "");
+    if (byDateTime !== 0) return byDateTime;
+    return (b.createdAt || "").localeCompare(a.createdAt || "");
+  });
+}
+
 function drawChart(canvas = elements.canvas, context = ctx, bodyInput = elements.bodyScore, mindInput = elements.mindScore) {
   const width = canvas.width;
-  const height = canvas.height;
   const padding = 58;
   const plot = width - padding * 2;
   const bodyScore = Number(bodyInput.value);
@@ -172,7 +210,7 @@ function drawChart(canvas = elements.canvas, context = ctx, bodyInput = elements
   const x = padding + (mindScore / 10) * plot;
   const y = padding + ((10 - bodyScore) / 10) * plot;
 
-  context.clearRect(0, 0, width, height);
+  context.clearRect(0, 0, canvas.width, canvas.height);
   context.fillStyle = "#edf8fd";
   context.fillRect(padding, padding, plot, plot);
 
@@ -246,11 +284,9 @@ function handleCanvasPoint(event, canvas = elements.canvas, bodyInput = elements
   const rawY = (event.clientY - rect.top) * scaleY;
   const x = Math.min(Math.max(rawX, padding), padding + plot);
   const y = Math.min(Math.max(rawY, padding), padding + plot);
-  const mind = Math.round(((x - padding) / plot) * 10);
-  const body = Math.round(10 - ((y - padding) / plot) * 10);
 
-  mindInput.value = String(mind);
-  bodyInput.value = String(body);
+  mindInput.value = String(Math.round(((x - padding) / plot) * 10));
+  bodyInput.value = String(Math.round(10 - ((y - padding) / plot) * 10));
   updateScoreLabels();
   drawAllCharts();
   scheduleDraftSave();
@@ -261,8 +297,40 @@ function drawAllCharts() {
   drawChart(elements.afterCanvas, afterCtx, elements.afterBodyScore, elements.afterMindScore);
 }
 
+function navigate(hash) {
+  window.location.hash = hash;
+}
+
+function showView(name) {
+  elements.formView.hidden = name !== "form";
+  elements.recordsView.hidden = name !== "records";
+  elements.detailView.hidden = name !== "detail";
+  elements.newRecordNav.classList.toggle("active", name === "form");
+  elements.recordsNav.classList.toggle("active", name === "records" || name === "detail");
+}
+
+function handleRoute() {
+  const hash = window.location.hash || "#/new";
+  const detailMatch = hash.match(/^#\/records\/(.+)$/);
+
+  if (detailMatch) {
+    renderDetail(decodeURIComponent(detailMatch[1]));
+    showView("detail");
+    return;
+  }
+
+  if (hash === "#/records") {
+    renderRecords();
+    showView("records");
+    return;
+  }
+
+  showView("form");
+  window.requestAnimationFrame(drawAllCharts);
+}
+
 function renderRecords() {
-  const sorted = [...records].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+  const sorted = sortRecords(records);
   elements.recordCount.textContent = `${records.length}件`;
 
   if (sorted.length === 0) {
@@ -276,34 +344,65 @@ function renderRecords() {
         <article class="record">
           <div class="record-header">
             <div>
-              <div class="record-date">${escapeHtml(record.date)}</div>
+              <div class="record-date">${escapeHtml(formatDateTime(record.dateTime))}</div>
               <div class="record-scores">
                 <span class="pill">身体 ${record.bodyScore}</span>
                 <span class="pill">心 ${record.mindScore}</span>
-                <span class="pill">後 身体 ${record.afterBodyScore ?? record.bodyScore} (${formatDelta(record.bodyDelta ?? 0)})</span>
-                <span class="pill">後 心 ${record.afterMindScore ?? record.mindScore} (${formatDelta(record.mindDelta ?? 0)})</span>
+                <span class="pill">後 身体 ${record.afterBodyScore} (${formatDelta(record.bodyDelta)})</span>
+                <span class="pill">後 心 ${record.afterMindScore} (${formatDelta(record.mindDelta)})</span>
               </div>
             </div>
-            <button class="delete-button" type="button" data-delete="${record.id}">削除</button>
+            <div class="record-actions">
+              <button class="button secondary small" type="button" data-detail="${record.id}">詳細</button>
+              <button class="delete-button" type="button" data-delete="${record.id}">削除</button>
+            </div>
           </div>
-          <div class="record-body">
-            ${field("状態", record.stateNote)}
-            ${field("試した後", record.afterNote)}
-            ${field("からだ", record.bodyAction)}
-            ${field("ことば", record.wordAction)}
-            ${field("いしき", record.focusAction)}
-            ${field("トライ", record.tryPlan)}
-            ${field("振り返り", record.reflection)}
-          </div>
+          <p class="record-summary">${escapeHtml(record.tryPlan || record.stateNote || "記録詳細から内容を確認できます。")}</p>
         </article>
       `,
     )
     .join("");
 }
 
-function field(label, value) {
-  if (!value) return "";
-  return `<p><strong>${label}</strong>${escapeHtml(value)}</p>`;
+function renderDetail(id) {
+  const record = records.find((item) => item.id === id);
+  if (!record) {
+    elements.recordDetail.innerHTML = '<p class="empty">記録が見つかりません。</p>';
+    return;
+  }
+
+  elements.recordDetail.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <p class="eyebrow">日時</p>
+        <h3>${escapeHtml(formatDateTime(record.dateTime))}</h3>
+      </div>
+      <div class="record-scores">
+        <span class="pill">身体 ${record.bodyScore}</span>
+        <span class="pill">心 ${record.mindScore}</span>
+        <span class="pill">後 身体 ${record.afterBodyScore} (${formatDelta(record.bodyDelta)})</span>
+        <span class="pill">後 心 ${record.afterMindScore} (${formatDelta(record.mindDelta)})</span>
+      </div>
+    </div>
+    <div class="detail-grid">
+      ${detailField("今の状態メモ", record.stateNote)}
+      ${detailField("からだ", record.bodyAction)}
+      ${detailField("ことば", record.wordAction)}
+      ${detailField("いしき", record.focusAction)}
+      ${detailField("試して変わったこと", record.afterNote)}
+      ${detailField("今日トライすること", record.tryPlan)}
+      ${detailField("終わった後の振り返り", record.reflection)}
+    </div>
+  `;
+}
+
+function detailField(label, value) {
+  return `
+    <section class="detail-field">
+      <h4>${label}</h4>
+      <p>${value ? escapeHtml(value) : "未入力"}</p>
+    </section>
+  `;
 }
 
 function escapeHtml(value) {
@@ -326,7 +425,7 @@ function clearForm() {
   elements.focusAction.value = "";
   elements.tryPlan.value = "";
   elements.reflection.value = "";
-  setDefaultDate();
+  setDefaultDateTime();
   updateScoreLabels();
   drawAllCharts();
   clearDraft();
@@ -337,9 +436,10 @@ function saveCurrentRecord() {
   const record = getFormData();
   records.push(record);
   saveRecords();
-  clearDraft();
+  clearForm();
   showSaveStatus("記録しました");
   renderRecords();
+  navigate(`#/records/${encodeURIComponent(record.id)}`);
 }
 
 function download(filename, content, type) {
@@ -357,18 +457,17 @@ function exportJson() {
 }
 
 function exportMarkdown() {
-  const content = records
-    .slice()
-    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt))
+  const content = sortRecords(records)
+    .reverse()
     .map(
-      (record) => `## ${record.date}
+      (record) => `## ${formatDateTime(record.dateTime)}
 
 - 身体の状態: ${record.bodyScore}
 - 心の状態: ${record.mindScore}
-- 試した後の身体: ${record.afterBodyScore ?? ""}
-- 試した後の心: ${record.afterMindScore ?? ""}
-- 身体の変化: ${formatDelta(record.bodyDelta ?? 0)}
-- 心の変化: ${formatDelta(record.mindDelta ?? 0)}
+- 試した後の身体: ${record.afterBodyScore}
+- 試した後の心: ${record.afterMindScore}
+- 身体の変化: ${formatDelta(record.bodyDelta)}
+- 心の変化: ${formatDelta(record.mindDelta)}
 - 状態メモ: ${record.stateNote || ""}
 - 試して変わったこと: ${record.afterNote || ""}
 - からだ: ${record.bodyAction || ""}
@@ -395,11 +494,15 @@ function attachEvents() {
   elements.afterCanvas.addEventListener("pointerdown", (event) =>
     handleCanvasPoint(event, elements.afterCanvas, elements.afterBodyScore, elements.afterMindScore),
   );
+  elements.newRecordNav.addEventListener("click", () => navigate("#/new"));
+  elements.recordsNav.addEventListener("click", () => navigate("#/records"));
+  elements.backToRecordsButton.addEventListener("click", () => navigate("#/records"));
   elements.saveDraftButton.addEventListener("click", () => saveDraft(true));
   elements.saveButton.addEventListener("click", saveCurrentRecord);
   elements.clearButton.addEventListener("click", clearForm);
   elements.exportJsonButton.addEventListener("click", exportJson);
   elements.exportMarkdownButton.addEventListener("click", exportMarkdown);
+  window.addEventListener("hashchange", handleRoute);
 
   document.querySelectorAll(".quick-actions button").forEach((button) => {
     button.addEventListener("click", () => {
@@ -415,7 +518,7 @@ function attachEvents() {
     elements.mindScore,
     elements.afterBodyScore,
     elements.afterMindScore,
-    elements.recordDate,
+    elements.recordDateTime,
     elements.stateNote,
     elements.afterNote,
     elements.bodyAction,
@@ -429,15 +532,22 @@ function attachEvents() {
   });
 
   elements.records.addEventListener("click", (event) => {
-    const id = event.target.dataset.delete;
-    if (!id) return;
-    records = records.filter((record) => record.id !== id);
+    const detailId = event.target.dataset.detail;
+    const deleteId = event.target.dataset.delete;
+
+    if (detailId) {
+      navigate(`#/records/${encodeURIComponent(detailId)}`);
+      return;
+    }
+
+    if (!deleteId) return;
+    records = records.filter((record) => record.id !== deleteId);
     saveRecords();
     renderRecords();
   });
 }
 
-setDefaultDate();
+setDefaultDateTime();
 const draft = loadDraft();
 if (draft) {
   setFormData(draft);
@@ -447,3 +557,4 @@ updateScoreLabels();
 drawAllCharts();
 renderRecords();
 attachEvents();
+handleRoute();

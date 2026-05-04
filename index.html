@@ -13,146 +13,152 @@
         <h1>身体と心の状態を記録する</h1>
       </div>
       <div class="header-actions">
+        <nav class="app-nav" aria-label="画面切り替え">
+          <button class="nav-button" id="newRecordNav" type="button">記録入力</button>
+          <button class="nav-button" id="recordsNav" type="button">記録一覧</button>
+        </nav>
         <button class="button secondary" id="exportMarkdownButton" type="button">Markdown</button>
         <button class="button secondary" id="exportJsonButton" type="button">JSON</button>
       </div>
     </header>
 
     <main class="layout">
-      <section class="panel score-panel" aria-labelledby="score-title">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">手順1</p>
-            <h2 id="score-title">今の身体と心に点数をつける</h2>
-          </div>
-          <p class="hint">0が最低、10が最高。グラフをクリックしても入力できます。</p>
-        </div>
-
-        <div class="score-grid">
-          <div class="chart-wrap">
-            <canvas id="stateChart" width="420" height="420" aria-label="身体と心の状態グラフ"></canvas>
-          </div>
-
-          <div class="inputs">
-            <label class="range-row">
-              <span>身体の状態</span>
-              <strong id="bodyValueLabel">5</strong>
-              <input id="bodyScore" type="range" min="0" max="10" step="1" value="5" />
-            </label>
-            <label class="range-row">
-              <span>心の状態</span>
-              <strong id="mindValueLabel">5</strong>
-              <input id="mindScore" type="range" min="0" max="10" step="1" value="5" />
-            </label>
-            <label>
-              <span>今の状態メモ</span>
-              <textarea id="stateNote" rows="4" placeholder="例: 身体は少し重い。心は普通。焦りはない。"></textarea>
-            </label>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="prepare-title">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">手順2</p>
-            <h2 id="prepare-title">1点上げるために整える</h2>
-          </div>
-          <p class="hint">結果ではなく、からだ、ことば、いしきから整えます。</p>
-        </div>
-
-        <div class="three-columns">
-          <label>
-            <span>からだ</span>
-            <textarea id="bodyAction" rows="4" placeholder="例: 顔を上げる。半歩前へ。ミス後3歩。"></textarea>
-          </label>
-          <label>
-            <span>ことば</span>
-            <textarea id="wordAction" rows="4" placeholder="例: 失敗してもいい。次に関わる。"></textarea>
-          </label>
-          <label>
-            <span>いしき</span>
-            <textarea id="focusAction" rows="4" placeholder="例: ゴール前に入る味方を見る。"></textarea>
-          </label>
-        </div>
-
-        <div class="quick-actions" aria-label="よく使う合図">
-          <button type="button" data-target="bodyAction" data-text="顔を上げる。半歩前へ。ミス後3歩。">顔を上げる</button>
-          <button type="button" data-target="wordAction" data-text="失敗してもいい。次に関わる。">失敗してもいい</button>
-          <button type="button" data-target="focusAction" data-text="見る、切り替える、次に関わる。">次に関わる</button>
-          <button type="button" data-target="focusAction" data-text="ゴール前に入る味方を見る。">味方を見る</button>
-        </div>
-      </section>
-
-      <section class="panel score-panel" aria-labelledby="after-score-title">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">手順3・4</p>
-            <h2 id="after-score-title">試した後にもう一度点数をつける</h2>
-          </div>
-          <p class="hint">周りの人は口出しせず、本人の主観で変化を確認します。</p>
-        </div>
-
-        <div class="score-grid">
-          <div class="chart-wrap">
-            <canvas id="afterStateChart" width="420" height="420" aria-label="試した後の身体と心の状態グラフ"></canvas>
-          </div>
-
-          <div class="inputs">
-            <label class="range-row">
-              <span>試した後の身体</span>
-              <strong id="afterBodyValueLabel">5</strong>
-              <input id="afterBodyScore" type="range" min="0" max="10" step="1" value="5" />
-            </label>
-            <label class="range-row">
-              <span>試した後の心</span>
-              <strong id="afterMindValueLabel">5</strong>
-              <input id="afterMindScore" type="range" min="0" max="10" step="1" value="5" />
-            </label>
-            <div class="delta-box" aria-live="polite">
-              <span>変化</span>
-              <strong id="deltaLabel">身体 +0 / 心 +0</strong>
+      <div class="view" id="formView">
+        <section class="panel score-panel" aria-labelledby="score-title">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">手順1</p>
+              <h2 id="score-title">今の身体と心に点数をつける</h2>
             </div>
+            <p class="hint">0が最低、10が最高。グラフをクリックしても入力できます。</p>
+          </div>
+
+          <div class="score-grid">
+            <div class="chart-wrap">
+              <canvas id="stateChart" width="420" height="420" aria-label="身体と心の状態グラフ"></canvas>
+            </div>
+
+            <div class="inputs">
+              <label class="range-row">
+                <span>身体の状態</span>
+                <strong id="bodyValueLabel">5</strong>
+                <input id="bodyScore" type="range" min="0" max="10" step="1" value="5" />
+              </label>
+              <label class="range-row">
+                <span>心の状態</span>
+                <strong id="mindValueLabel">5</strong>
+                <input id="mindScore" type="range" min="0" max="10" step="1" value="5" />
+              </label>
+              <label>
+                <span>今の状態メモ</span>
+                <textarea id="stateNote" rows="4" placeholder="例: 身体は少し重い。心は普通。焦りはない。"></textarea>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="prepare-title">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">手順2</p>
+              <h2 id="prepare-title">1点上げるために整える</h2>
+            </div>
+            <p class="hint">結果ではなく、からだ、ことば、いしきから整えます。</p>
+          </div>
+
+          <div class="three-columns">
             <label>
-              <span>試して変わったこと</span>
-              <textarea id="afterNote" rows="4" placeholder="例: 顔を洗ったら少しスッキリした。心は1点上がった。"></textarea>
+              <span>からだ</span>
+              <textarea id="bodyAction" rows="4" placeholder="例: 顔を上げる。半歩前へ。ミス後3歩。"></textarea>
+            </label>
+            <label>
+              <span>ことば</span>
+              <textarea id="wordAction" rows="4" placeholder="例: 失敗してもいい。次に関わる。"></textarea>
+            </label>
+            <label>
+              <span>いしき</span>
+              <textarea id="focusAction" rows="4" placeholder="例: ゴール前に入る味方を見る。"></textarea>
             </label>
           </div>
-        </div>
-      </section>
 
-      <section class="panel" aria-labelledby="reflection-title">
-        <div class="section-title">
-          <div>
-            <p class="eyebrow">振り返り</p>
-            <h2 id="reflection-title">今日のトライを残す</h2>
+          <div class="quick-actions" aria-label="よく使う合図">
+            <button type="button" data-target="bodyAction" data-text="顔を上げる。半歩前へ。ミス後3歩。">顔を上げる</button>
+            <button type="button" data-target="wordAction" data-text="失敗してもいい。次に関わる。">失敗してもいい</button>
+            <button type="button" data-target="focusAction" data-text="見る、切り替える、次に関わる。">次に関わる</button>
+            <button type="button" data-target="focusAction" data-text="ゴール前に入る味方を見る。">味方を見る</button>
           </div>
-        </div>
+        </section>
 
-        <div class="two-columns">
-          <label>
-            <span>今日トライすること</span>
-            <textarea id="tryPlan" rows="3" placeholder="例: アシストになるラストパスを1本狙う。"></textarea>
-          </label>
-          <label>
-            <span>終わった後の振り返り</span>
-            <textarea id="reflection" rows="3" placeholder="例: 1本は狙えた。考えすぎて止まった場面もあった。"></textarea>
-          </label>
-        </div>
+        <section class="panel score-panel" aria-labelledby="after-score-title">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">手順3・4</p>
+              <h2 id="after-score-title">試した後にもう一度点数をつける</h2>
+            </div>
+            <p class="hint">周りの人は口出しせず、本人の主観で変化を確認します。</p>
+          </div>
 
-        <div class="form-actions">
-          <label class="date-field">
-            <span>日付</span>
-            <input id="recordDate" type="date" />
-          </label>
-          <button class="button secondary" id="saveDraftButton" type="button">途中保存</button>
-          <button class="button primary" id="saveButton" type="button">記録する</button>
-          <button class="button secondary" id="clearButton" type="button">入力をクリア</button>
-          <span class="save-status" id="saveStatus" aria-live="polite"></span>
-        </div>
-      </section>
+          <div class="score-grid">
+            <div class="chart-wrap">
+              <canvas id="afterStateChart" width="420" height="420" aria-label="試した後の身体と心の状態グラフ"></canvas>
+            </div>
 
-      <section class="panel records-panel" aria-labelledby="records-title">
+            <div class="inputs">
+              <label class="range-row">
+                <span>試した後の身体</span>
+                <strong id="afterBodyValueLabel">5</strong>
+                <input id="afterBodyScore" type="range" min="0" max="10" step="1" value="5" />
+              </label>
+              <label class="range-row">
+                <span>試した後の心</span>
+                <strong id="afterMindValueLabel">5</strong>
+                <input id="afterMindScore" type="range" min="0" max="10" step="1" value="5" />
+              </label>
+              <div class="delta-box" aria-live="polite">
+                <span>変化</span>
+                <strong id="deltaLabel">身体 +0 / 心 +0</strong>
+              </div>
+              <label>
+                <span>試して変わったこと</span>
+                <textarea id="afterNote" rows="4" placeholder="例: 顔を洗ったら少しスッキリした。心は1点上がった。"></textarea>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" aria-labelledby="reflection-title">
+          <div class="section-title">
+            <div>
+              <p class="eyebrow">振り返り</p>
+              <h2 id="reflection-title">今日のトライを残す</h2>
+            </div>
+          </div>
+
+          <div class="two-columns">
+            <label>
+              <span>今日トライすること</span>
+              <textarea id="tryPlan" rows="3" placeholder="例: アシストになるラストパスを1本狙う。"></textarea>
+            </label>
+            <label>
+              <span>終わった後の振り返り</span>
+              <textarea id="reflection" rows="3" placeholder="例: 1本は狙えた。考えすぎて止まった場面もあった。"></textarea>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <label class="date-field">
+              <span>日時</span>
+              <input id="recordDateTime" type="datetime-local" />
+            </label>
+            <button class="button secondary" id="saveDraftButton" type="button">途中保存</button>
+            <button class="button primary" id="saveButton" type="button">記録する</button>
+            <button class="button secondary" id="clearButton" type="button">入力をクリア</button>
+            <span class="save-status" id="saveStatus" aria-live="polite"></span>
+          </div>
+        </section>
+      </div>
+
+      <section class="view panel records-panel" id="recordsView" aria-labelledby="records-title" hidden>
         <div class="section-title">
           <div>
             <p class="eyebrow">履歴</p>
@@ -161,6 +167,17 @@
           <p class="hint" id="recordCount">0件</p>
         </div>
         <div id="records" class="records"></div>
+      </section>
+
+      <section class="view panel detail-panel" id="detailView" aria-labelledby="detail-title" hidden>
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">記録詳細</p>
+            <h2 id="detail-title">記録を見る</h2>
+          </div>
+          <button class="button secondary" id="backToRecordsButton" type="button">一覧へ戻る</button>
+        </div>
+        <div id="recordDetail" class="record-detail"></div>
       </section>
     </main>
 

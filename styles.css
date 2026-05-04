@@ -69,6 +69,31 @@ textarea {
   flex-wrap: wrap;
 }
 
+.app-nav {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f5f9fc;
+}
+
+.nav-button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
+.nav-button.active {
+  background: #fff;
+  color: var(--blue-dark);
+  box-shadow: 0 1px 4px rgba(22, 32, 42, 0.08);
+}
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -76,6 +101,15 @@ textarea {
   max-width: 1180px;
   margin: 0 auto;
   padding: 22px;
+}
+
+.view {
+  display: grid;
+  gap: 18px;
+}
+
+.view[hidden] {
+  display: none;
 }
 
 .panel {
@@ -151,7 +185,8 @@ label span {
 }
 
 textarea,
-input[type="date"] {
+input[type="date"],
+input[type="datetime-local"] {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -244,7 +279,7 @@ input:focus {
 }
 
 .date-field {
-  min-width: 180px;
+  min-width: min(100%, 260px);
 }
 
 .save-status {
@@ -303,6 +338,63 @@ input:focus {
   gap: 10px;
 }
 
+.record-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.button.small {
+  padding: 7px 10px;
+  font-size: 13px;
+}
+
+.record-summary {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.detail-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.detail-header h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.detail-field {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdff;
+  padding: 14px;
+}
+
+.detail-field h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.detail-field p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
 .record-body p {
   margin: 0;
   color: var(--muted);
@@ -334,9 +426,19 @@ input:focus {
 @media (max-width: 820px) {
   .app-header,
   .section-title,
-  .record-header {
+  .record-header,
+  .detail-header {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .header-actions {
+    align-items: stretch;
+  }
+
+  .app-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .layout {
@@ -350,7 +452,23 @@ input:focus {
   .score-grid,
   .three-columns,
   .two-columns,
-  .record-body {
+  .record-body,
+  .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .date-field {
+    min-width: 0;
+  }
+
+  .button,
+  .quick-actions button {
+    width: 100%;
   }
 }
