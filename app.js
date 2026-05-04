@@ -45,6 +45,13 @@ const docs = [
     tags: ["スキル"],
   },
   {
+    slug: "dribbling-vision-map",
+    title: "ドリブル中の視線マップ",
+    path: "docs/dribbling-vision-map.md",
+    summary: "見る場所、順番、頻度を決めて判断を速くする。",
+    tags: ["スキル"],
+  },
+  {
     slug: "mental-control",
     title: "からだ、ことば、いしきで整える",
     path: "docs/mental-control.md",
