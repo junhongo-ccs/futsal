@@ -82,6 +82,7 @@ const elements = {
   recordDateTime: document.querySelector("#recordDateTime"),
   stateNote: document.querySelector("#stateNote"),
   afterNote: document.querySelector("#afterNote"),
+  smallActionRows: Array.from(document.querySelectorAll(".small-action")),
   bodyAction: document.querySelector("#bodyAction"),
   wordAction: document.querySelector("#wordAction"),
   focusAction: document.querySelector("#focusAction"),
@@ -126,7 +127,19 @@ function normalizeRecord(record) {
     afterMindScore: record.afterMindScore ?? record.mindScore,
     bodyDelta: record.bodyDelta ?? (record.afterBodyScore ?? record.bodyScore) - record.bodyScore,
     mindDelta: record.mindDelta ?? (record.afterMindScore ?? record.mindScore) - record.mindScore,
+    smallActions: normalizeSmallActions(record.smallActions),
   };
+}
+
+function normalizeSmallActions(actions = []) {
+  return actions
+    .map((action) => ({
+      text: action.text || "",
+      status: action.status || "",
+      effort: action.effort || "",
+      note: action.note || "",
+    }))
+    .filter((action) => action.text || action.status || action.effort || action.note);
 }
 
 function loadRecords() {
@@ -155,6 +168,7 @@ function getFormData() {
     mindDelta: Number(elements.afterMindScore.value) - Number(elements.mindScore.value),
     stateNote: elements.stateNote.value.trim(),
     afterNote: elements.afterNote.value.trim(),
+    smallActions: getSmallActions(),
     bodyAction: elements.bodyAction.value.trim(),
     wordAction: elements.wordAction.value.trim(),
     focusAction: elements.focusAction.value.trim(),
@@ -173,6 +187,7 @@ function getDraftData() {
     afterMindScore: elements.afterMindScore.value,
     stateNote: elements.stateNote.value,
     afterNote: elements.afterNote.value,
+    smallActions: getSmallActions(false),
     bodyAction: elements.bodyAction.value,
     wordAction: elements.wordAction.value,
     focusAction: elements.focusAction.value,
@@ -191,6 +206,7 @@ function setFormData(data) {
   elements.afterMindScore.value = data.afterMindScore ?? "5";
   elements.stateNote.value = data.stateNote ?? "";
   elements.afterNote.value = data.afterNote ?? "";
+  setSmallActions(data.smallActions ?? []);
   elements.bodyAction.value = data.bodyAction ?? "";
   elements.wordAction.value = data.wordAction ?? "";
   elements.focusAction.value = data.focusAction ?? "";
@@ -264,6 +280,60 @@ function sortRecords(list) {
     if (byDateTime !== 0) return byDateTime;
     return (b.createdAt || "").localeCompare(a.createdAt || "");
   });
+}
+
+function getSmallActions(trim = true) {
+  return elements.smallActionRows
+    .map((row) => {
+      const text = row.querySelector(".small-action-text").value;
+      const note = row.querySelector(".small-action-note").value;
+      return {
+        text: trim ? text.trim() : text,
+        status: row.querySelector(".small-action-status").value,
+        effort: row.querySelector(".small-action-effort").value,
+        note: trim ? note.trim() : note,
+      };
+    })
+    .filter((action) => action.text || action.status || action.effort || action.note);
+}
+
+function setSmallActions(actions = []) {
+  elements.smallActionRows.forEach((row, index) => {
+    const action = actions[index] || {};
+    row.querySelector(".small-action-text").value = action.text || "";
+    row.querySelector(".small-action-status").value = action.status || "";
+    row.querySelector(".small-action-effort").value = action.effort || "";
+    row.querySelector(".small-action-note").value = action.note || "";
+  });
+}
+
+function getActionStats(actions = []) {
+  const normalized = normalizeSmallActions(actions);
+  const total = normalized.length;
+  const done = normalized.filter((action) => action.status === "done").length;
+  const partial = normalized.filter((action) => action.status === "partial").length;
+  const missed = normalized.filter((action) => action.status === "missed").length;
+  const score = done + partial * 0.5;
+  return { total, done, partial, missed, score };
+}
+
+function formatActionStats(actions = []) {
+  const stats = getActionStats(actions);
+  if (stats.total === 0) return "行動 -";
+  return `行動 ${formatNumber(stats.score)}/${stats.total}`;
+}
+
+function formatNumber(value) {
+  return Number.isInteger(value) ? String(value) : String(value.toFixed(1));
+}
+
+function formatActionStatus(value) {
+  const labels = {
+    done: "できた",
+    partial: "一部できた",
+    missed: "できなかった",
+  };
+  return labels[value] || "未選択";
 }
 
 function drawChart(canvas = elements.canvas, context = ctx, bodyInput = elements.bodyScore, mindInput = elements.mindScore) {
@@ -427,6 +497,7 @@ function renderRecords() {
             <div>
               <div class="record-date">${escapeHtml(formatDateTime(record.dateTime))}</div>
               <div class="record-scores">
+                <span class="pill">${escapeHtml(formatActionStats(record.smallActions))}</span>
                 <span class="pill">身体 ${record.bodyScore}</span>
                 <span class="pill">心 ${record.mindScore}</span>
                 <span class="pill">後 身体 ${record.afterBodyScore} (${formatDelta(record.bodyDelta)})</span>
@@ -438,11 +509,15 @@ function renderRecords() {
               <button class="delete-button" type="button" data-delete="${record.id}">削除</button>
             </div>
           </div>
-          <p class="record-summary">${escapeHtml(record.tryPlan || record.stateNote || "記録詳細から内容を確認できます。")}</p>
+          <p class="record-summary">${escapeHtml(record.tryPlan || getFirstActionText(record.smallActions) || record.stateNote || "記録詳細から内容を確認できます。")}</p>
         </article>
       `,
     )
     .join("");
+}
+
+function getFirstActionText(actions = []) {
+  return normalizeSmallActions(actions)[0]?.text || "";
 }
 
 function renderDetail(id) {
@@ -459,6 +534,7 @@ function renderDetail(id) {
         <h3>${escapeHtml(formatDateTime(record.dateTime))}</h3>
       </div>
       <div class="record-scores">
+        <span class="pill">${escapeHtml(formatActionStats(record.smallActions))}</span>
         <span class="pill">身体 ${record.bodyScore}</span>
         <span class="pill">心 ${record.mindScore}</span>
         <span class="pill">後 身体 ${record.afterBodyScore} (${formatDelta(record.bodyDelta)})</span>
@@ -467,6 +543,7 @@ function renderDetail(id) {
     </div>
     <div class="detail-grid">
       ${detailField("今の状態メモ", record.stateNote)}
+      ${actionsDetailField(record.smallActions)}
       ${detailField("からだ", record.bodyAction)}
       ${detailField("ことば", record.wordAction)}
       ${detailField("いしき", record.focusAction)}
@@ -474,6 +551,33 @@ function renderDetail(id) {
       ${detailField("今日トライすること", record.tryPlan)}
       ${detailField("終わった後の振り返り", record.reflection)}
     </div>
+  `;
+}
+
+function actionsDetailField(actions = []) {
+  const normalized = normalizeSmallActions(actions);
+  if (normalized.length === 0) {
+    return detailField("小さな行動", "");
+  }
+
+  return `
+    <section class="detail-field">
+      <h4>小さな行動</h4>
+      <div class="action-list">
+        ${normalized
+          .map(
+            (action) => `
+              <div class="action-item">
+                <h4>${escapeHtml(action.text || "未入力")}</h4>
+                <span class="pill">${escapeHtml(formatActionStatus(action.status))}</span>
+                ${action.effort ? `<span class="pill">負荷 ${escapeHtml(action.effort)}</span>` : ""}
+                ${action.note ? `<p>${escapeHtml(action.note)}</p>` : ""}
+              </div>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
   `;
 }
 
@@ -602,6 +706,7 @@ function clearForm() {
   elements.afterMindScore.value = "5";
   elements.stateNote.value = "";
   elements.afterNote.value = "";
+  setSmallActions([]);
   elements.bodyAction.value = "";
   elements.wordAction.value = "";
   elements.focusAction.value = "";
@@ -651,6 +756,8 @@ function exportMarkdown() {
 - 試した後の心: ${record.afterMindScore}
 - 身体の変化: ${formatDelta(record.bodyDelta)}
 - 心の変化: ${formatDelta(record.mindDelta)}
+- 小さな行動: ${formatActionStats(record.smallActions)}
+${formatActionsForMarkdown(record.smallActions)}
 - 状態メモ: ${record.stateNote || ""}
 - 試して変わったこと: ${record.afterNote || ""}
 - からだ: ${record.bodyAction || ""}
@@ -664,6 +771,17 @@ function exportMarkdown() {
 
   closeDownloadModal();
   download("futsal-records.md", `# フットサル記録\n\n${content}`, "text/markdown");
+}
+
+function formatActionsForMarkdown(actions = []) {
+  const normalized = normalizeSmallActions(actions);
+  if (normalized.length === 0) return "";
+  return normalized
+    .map(
+      (action, index) =>
+        `- 小さな行動${index + 1}: ${action.text || ""} / ${formatActionStatus(action.status)} / 負荷 ${action.effort || "-"} / ${action.note || ""}`,
+    )
+    .join("\n");
 }
 
 function openDownloadModal() {
@@ -728,6 +846,12 @@ function attachEvents() {
     elements.recordDateTime,
     elements.stateNote,
     elements.afterNote,
+    ...elements.smallActionRows.flatMap((row) => [
+      row.querySelector(".small-action-text"),
+      row.querySelector(".small-action-status"),
+      row.querySelector(".small-action-effort"),
+      row.querySelector(".small-action-note"),
+    ]),
     elements.bodyAction,
     elements.wordAction,
     elements.focusAction,
