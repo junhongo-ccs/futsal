@@ -395,6 +395,53 @@ input:focus {
   white-space: pre-wrap;
 }
 
+.records-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(22, 32, 42, 0.42);
+  padding: 18px;
+  z-index: 20;
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal {
+  width: min(100%, 420px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 24px 80px rgba(22, 32, 42, 0.24);
+  padding: 22px;
+}
+
+.modal h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.modal p {
+  margin: 0 0 18px;
+  color: var(--muted);
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .record-body p {
   margin: 0;
   color: var(--muted);
@@ -461,6 +508,12 @@ input:focus {
     display: grid;
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .records-toolbar,
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .date-field {

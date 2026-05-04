@@ -31,8 +31,11 @@ const elements = {
   saveButton: document.querySelector("#saveButton"),
   clearButton: document.querySelector("#clearButton"),
   saveStatus: document.querySelector("#saveStatus"),
-  exportMarkdownButton: document.querySelector("#exportMarkdownButton"),
-  exportJsonButton: document.querySelector("#exportJsonButton"),
+  downloadButton: document.querySelector("#downloadButton"),
+  downloadModal: document.querySelector("#downloadModal"),
+  downloadMarkdownButton: document.querySelector("#downloadMarkdownButton"),
+  downloadJsonButton: document.querySelector("#downloadJsonButton"),
+  cancelDownloadButton: document.querySelector("#cancelDownloadButton"),
   records: document.querySelector("#records"),
   recordCount: document.querySelector("#recordCount"),
   recordDetail: document.querySelector("#recordDetail"),
@@ -453,6 +456,7 @@ function download(filename, content, type) {
 }
 
 function exportJson() {
+  closeDownloadModal();
   download("futsal-records.json", JSON.stringify(records, null, 2), "application/json");
 }
 
@@ -479,7 +483,17 @@ function exportMarkdown() {
     )
     .join("\n");
 
+  closeDownloadModal();
   download("futsal-records.md", `# フットサル記録\n\n${content}`, "text/markdown");
+}
+
+function openDownloadModal() {
+  elements.downloadModal.hidden = false;
+  elements.downloadMarkdownButton.focus();
+}
+
+function closeDownloadModal() {
+  elements.downloadModal.hidden = true;
 }
 
 function attachEvents() {
@@ -500,8 +514,20 @@ function attachEvents() {
   elements.saveDraftButton.addEventListener("click", () => saveDraft(true));
   elements.saveButton.addEventListener("click", saveCurrentRecord);
   elements.clearButton.addEventListener("click", clearForm);
-  elements.exportJsonButton.addEventListener("click", exportJson);
-  elements.exportMarkdownButton.addEventListener("click", exportMarkdown);
+  elements.downloadButton.addEventListener("click", openDownloadModal);
+  elements.downloadJsonButton.addEventListener("click", exportJson);
+  elements.downloadMarkdownButton.addEventListener("click", exportMarkdown);
+  elements.cancelDownloadButton.addEventListener("click", closeDownloadModal);
+  elements.downloadModal.addEventListener("click", (event) => {
+    if (event.target === elements.downloadModal) {
+      closeDownloadModal();
+    }
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.downloadModal.hidden) {
+      closeDownloadModal();
+    }
+  });
   window.addEventListener("hashchange", handleRoute);
 
   document.querySelectorAll(".quick-actions button").forEach((button) => {

@@ -17,8 +17,6 @@
           <button class="nav-button" id="newRecordNav" type="button">記録入力</button>
           <button class="nav-button" id="recordsNav" type="button">記録一覧</button>
         </nav>
-        <button class="button secondary" id="exportMarkdownButton" type="button">Markdown</button>
-        <button class="button secondary" id="exportJsonButton" type="button">JSON</button>
       </div>
     </header>
 
@@ -164,7 +162,10 @@
             <p class="eyebrow">履歴</p>
             <h2 id="records-title">記録一覧</h2>
           </div>
-          <p class="hint" id="recordCount">0件</p>
+          <div class="records-toolbar">
+            <p class="hint" id="recordCount">0件</p>
+            <button class="button secondary" id="downloadButton" type="button">ダウンロード</button>
+          </div>
         </div>
         <div id="records" class="records"></div>
       </section>
@@ -180,6 +181,18 @@
         <div id="recordDetail" class="record-detail"></div>
       </section>
     </main>
+
+    <div class="modal-backdrop" id="downloadModal" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="download-modal-title">
+        <h2 id="download-modal-title">記録をダウンロード</h2>
+        <p>保存形式を選んでください。</p>
+        <div class="modal-actions">
+          <button class="button primary" id="downloadMarkdownButton" type="button">MD</button>
+          <button class="button secondary" id="downloadJsonButton" type="button">JSON</button>
+          <button class="button secondary" id="cancelDownloadButton" type="button">キャンセル</button>
+        </div>
+      </section>
+    </div>
 
     <script src="app.js"></script>
   </body>
