@@ -43,6 +43,12 @@ const docs = [
     path: "docs/mental-control.md",
     summary: "結果ではなく、まず状態を整える。",
   },
+  {
+    slug: "pressure-control",
+    title: "狭いコートでのプレッシャー対処",
+    path: "docs/pressure-control.md",
+    summary: "速い寄せの中で、受け入れ、外を見て、次に関わる。",
+  },
 ];
 
 const elements = {
