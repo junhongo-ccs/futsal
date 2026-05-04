@@ -469,13 +469,12 @@ function renderDocsList() {
   elements.docsList.innerHTML = docs
     .map(
       (doc) => `
-        <article class="doc-card">
+        <button class="doc-card" type="button" data-doc="${doc.slug}">
           <div>
             <h3>${escapeHtml(doc.title)}</h3>
             <p>${escapeHtml(doc.summary)}</p>
           </div>
-          <button class="button secondary small" type="button" data-doc="${doc.slug}">読む</button>
-        </article>
+        </button>
       `,
     )
     .join("");

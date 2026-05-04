@@ -307,6 +307,23 @@ input:focus {
 .doc-card {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.doc-card:hover,
+.doc-card:focus-visible {
+  border-color: var(--blue);
+  box-shadow: 0 12px 28px rgba(7, 155, 216, 0.14);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .doc-card h3 {
