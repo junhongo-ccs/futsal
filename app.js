@@ -38,6 +38,13 @@ const docs = [
     summary: "マインドを身体の合図に変える。",
   },
   {
+    slug: "peripheral-vision-dribbling",
+    title: "間接視野でボールを扱う",
+    path: "docs/peripheral-vision-dribbling.md",
+    summary: "顔を上げ、周辺視野と触覚でボールを管理する。",
+    tags: ["スキル"],
+  },
+  {
     slug: "mental-control",
     title: "からだ、ことば、いしきで整える",
     path: "docs/mental-control.md",
@@ -589,11 +596,17 @@ function renderDocsList() {
           <div>
             <h3>${escapeHtml(doc.title)}</h3>
             <p>${escapeHtml(doc.summary)}</p>
+            ${renderDocTags(doc.tags)}
           </div>
         </button>
       `,
     )
     .join("");
+}
+
+function renderDocTags(tags = []) {
+  if (tags.length === 0) return "";
+  return `<div class="doc-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>`;
 }
 
 async function renderDocsDetail(slug) {

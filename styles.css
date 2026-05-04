@@ -360,6 +360,23 @@ input:focus {
   line-height: 1.6;
 }
 
+.doc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.doc-tags span {
+  border: 1px solid #b9ddeb;
+  border-radius: 999px;
+  background: #eef7fb;
+  color: var(--blue-dark);
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .docs-list {
   display: grid;
   gap: 12px;
