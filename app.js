@@ -1,13 +1,61 @@
 const storageKey = "futsal-state-records-v1";
 const draftStorageKey = "futsal-state-draft-v1";
+const docs = [
+  {
+    slug: "readme",
+    title: "週末フットサルの目的",
+    path: "README.md",
+    summary: "全体の入口。目的、使い方、Webアプリの説明。",
+  },
+  {
+    slug: "purpose",
+    title: "自分のフットサルの目的",
+    path: "docs/purpose.md",
+    summary: "週末フットサルで立ち戻る目的。",
+  },
+  {
+    slug: "thinking",
+    title: "目的論と原因論",
+    path: "docs/thinking.md",
+    summary: "原因を見つけ、次の目的へ変える考え方。",
+  },
+  {
+    slug: "preparation",
+    title: "本番で安定するための準備力",
+    path: "docs/preparation.md",
+    summary: "価値観、意識、技術を整える。",
+  },
+  {
+    slug: "awareness",
+    title: "意識系とは何か",
+    path: "docs/awareness.md",
+    summary: "見る、切り替える、次に関わる。",
+  },
+  {
+    slug: "body-sense",
+    title: "体感覚に落とし込む",
+    path: "docs/body-sense.md",
+    summary: "マインドを身体の合図に変える。",
+  },
+  {
+    slug: "mental-control",
+    title: "からだ、ことば、いしきで整える",
+    path: "docs/mental-control.md",
+    summary: "結果ではなく、まず状態を整える。",
+  },
+];
 
 const elements = {
   formView: document.querySelector("#formView"),
   recordsView: document.querySelector("#recordsView"),
   detailView: document.querySelector("#detailView"),
+  docsView: document.querySelector("#docsView"),
+  docsDetailView: document.querySelector("#docsDetailView"),
   newRecordNav: document.querySelector("#newRecordNav"),
   recordsNav: document.querySelector("#recordsNav"),
+  docsNav: document.querySelector("#docsNav"),
   backToRecordsButton: document.querySelector("#backToRecordsButton"),
+  backToDocsButton: document.querySelector("#backToDocsButton"),
   canvas: document.querySelector("#stateChart"),
   afterCanvas: document.querySelector("#afterStateChart"),
   bodyScore: document.querySelector("#bodyScore"),
@@ -39,6 +87,8 @@ const elements = {
   records: document.querySelector("#records"),
   recordCount: document.querySelector("#recordCount"),
   recordDetail: document.querySelector("#recordDetail"),
+  docsList: document.querySelector("#docsList"),
+  docsDetail: document.querySelector("#docsDetail"),
 };
 
 const ctx = elements.canvas.getContext("2d");
@@ -308,13 +358,17 @@ function showView(name) {
   elements.formView.hidden = name !== "form";
   elements.recordsView.hidden = name !== "records";
   elements.detailView.hidden = name !== "detail";
+  elements.docsView.hidden = name !== "docs";
+  elements.docsDetailView.hidden = name !== "docsDetail";
   elements.newRecordNav.classList.toggle("active", name === "form");
   elements.recordsNav.classList.toggle("active", name === "records" || name === "detail");
+  elements.docsNav.classList.toggle("active", name === "docs" || name === "docsDetail");
 }
 
 function handleRoute() {
   const hash = window.location.hash || "#/new";
   const detailMatch = hash.match(/^#\/records\/(.+)$/);
+  const docsDetailMatch = hash.match(/^#\/docs\/(.+)$/);
 
   if (detailMatch) {
     renderDetail(decodeURIComponent(detailMatch[1]));
@@ -322,9 +376,21 @@ function handleRoute() {
     return;
   }
 
+  if (docsDetailMatch) {
+    renderDocsDetail(decodeURIComponent(docsDetailMatch[1]));
+    showView("docsDetail");
+    return;
+  }
+
   if (hash === "#/records") {
     renderRecords();
     showView("records");
+    return;
+  }
+
+  if (hash === "#/docs") {
+    renderDocsList();
+    showView("docs");
     return;
   }
 
@@ -397,6 +463,108 @@ function renderDetail(id) {
       ${detailField("終わった後の振り返り", record.reflection)}
     </div>
   `;
+}
+
+function renderDocsList() {
+  elements.docsList.innerHTML = docs
+    .map(
+      (doc) => `
+        <article class="doc-card">
+          <div>
+            <h3>${escapeHtml(doc.title)}</h3>
+            <p>${escapeHtml(doc.summary)}</p>
+          </div>
+          <button class="button secondary small" type="button" data-doc="${doc.slug}">読む</button>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+async function renderDocsDetail(slug) {
+  const doc = docs.find((item) => item.slug === slug);
+  if (!doc) {
+    elements.docsDetail.innerHTML = '<p class="empty">ドキュメントが見つかりません。</p>';
+    return;
+  }
+
+  elements.docsDetail.innerHTML = '<p class="empty">読み込み中...</p>';
+
+  try {
+    const response = await fetch(doc.path);
+    if (!response.ok) throw new Error(`Failed to load ${doc.path}`);
+    const markdown = await response.text();
+    elements.docsDetail.innerHTML = renderMarkdown(markdown);
+  } catch {
+    elements.docsDetail.innerHTML = '<p class="empty">ドキュメントを読み込めませんでした。</p>';
+  }
+}
+
+function renderMarkdown(markdown) {
+  const lines = markdown.split(/\r?\n/);
+  const html = [];
+  let listItems = [];
+  let quoteLines = [];
+
+  function flushList() {
+    if (listItems.length === 0) return;
+    html.push(`<ul>${listItems.map((item) => `<li>${formatInline(item)}</li>`).join("")}</ul>`);
+    listItems = [];
+  }
+
+  function flushQuote() {
+    if (quoteLines.length === 0) return;
+    html.push(`<blockquote>${quoteLines.map((line) => `<p>${formatInline(line)}</p>`).join("")}</blockquote>`);
+    quoteLines = [];
+  }
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      flushList();
+      flushQuote();
+      return;
+    }
+
+    if (trimmed.startsWith("> ")) {
+      flushList();
+      quoteLines.push(trimmed.slice(2));
+      return;
+    }
+
+    if (trimmed.startsWith("- ")) {
+      flushQuote();
+      listItems.push(trimmed.slice(2));
+      return;
+    }
+
+    flushList();
+    flushQuote();
+
+    if (trimmed.startsWith("### ")) {
+      html.push(`<h3>${formatInline(trimmed.slice(4))}</h3>`);
+    } else if (trimmed.startsWith("## ")) {
+      html.push(`<h2>${formatInline(trimmed.slice(3))}</h2>`);
+    } else if (trimmed.startsWith("# ")) {
+      html.push(`<h1>${formatInline(trimmed.slice(2))}</h1>`);
+    } else if (/^\d+\.\s/.test(trimmed)) {
+      html.push(`<p>${formatInline(trimmed)}</p>`);
+    } else {
+      html.push(`<p>${formatInline(trimmed)}</p>`);
+    }
+  });
+
+  flushList();
+  flushQuote();
+  return html.join("");
+}
+
+function formatInline(value) {
+  return escapeHtml(value)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`(.+?)`/g, "<code>$1</code>");
 }
 
 function detailField(label, value) {
@@ -510,7 +678,9 @@ function attachEvents() {
   );
   elements.newRecordNav.addEventListener("click", () => navigate("#/new"));
   elements.recordsNav.addEventListener("click", () => navigate("#/records"));
+  elements.docsNav.addEventListener("click", () => navigate("#/docs"));
   elements.backToRecordsButton.addEventListener("click", () => navigate("#/records"));
+  elements.backToDocsButton.addEventListener("click", () => navigate("#/docs"));
   elements.saveDraftButton.addEventListener("click", () => saveDraft(true));
   elements.saveButton.addEventListener("click", saveCurrentRecord);
   elements.clearButton.addEventListener("click", clearForm);
@@ -571,6 +741,12 @@ function attachEvents() {
     saveRecords();
     renderRecords();
   });
+
+  elements.docsList.addEventListener("click", (event) => {
+    const slug = event.target.dataset.doc;
+    if (!slug) return;
+    navigate(`#/docs/${encodeURIComponent(slug)}`);
+  });
 }
 
 setDefaultDateTime();
@@ -582,5 +758,6 @@ if (draft) {
 updateScoreLabels();
 drawAllCharts();
 renderRecords();
+renderDocsList();
 attachEvents();
 handleRoute();

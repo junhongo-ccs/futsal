@@ -16,6 +16,7 @@
         <nav class="app-nav" aria-label="画面切り替え">
           <button class="nav-button" id="newRecordNav" type="button">記録入力</button>
           <button class="nav-button" id="recordsNav" type="button">記録一覧</button>
+          <button class="nav-button" id="docsNav" type="button">Docs</button>
         </nav>
       </div>
     </header>
@@ -179,6 +180,28 @@
           <button class="button secondary" id="backToRecordsButton" type="button">一覧へ戻る</button>
         </div>
         <div id="recordDetail" class="record-detail"></div>
+      </section>
+
+      <section class="view panel docs-panel" id="docsView" aria-labelledby="docs-title" hidden>
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Docs</p>
+            <h2 id="docs-title">ドキュメント一覧</h2>
+          </div>
+          <p class="hint">目的、準備、意識、体感覚などを読み返せます。</p>
+        </div>
+        <div id="docsList" class="docs-list"></div>
+      </section>
+
+      <section class="view panel docs-detail-panel" id="docsDetailView" aria-labelledby="docs-detail-title" hidden>
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Docs詳細</p>
+            <h2 id="docs-detail-title">ドキュメントを読む</h2>
+          </div>
+          <button class="button secondary" id="backToDocsButton" type="button">Docs一覧へ戻る</button>
+        </div>
+        <article id="docsDetail" class="markdown-body"></article>
       </section>
     </main>
 
