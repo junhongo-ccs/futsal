@@ -319,8 +319,8 @@ function getActionStats(actions = []) {
 
 function formatActionStats(actions = []) {
   const stats = getActionStats(actions);
-  if (stats.total === 0) return "行動 -";
-  return `行動 ${formatNumber(stats.score)}/${stats.total}`;
+  if (stats.total === 0) return "約束 -";
+  return `約束 ${formatNumber(stats.score)}/${stats.total}`;
 }
 
 function formatNumber(value) {
@@ -557,12 +557,12 @@ function renderDetail(id) {
 function actionsDetailField(actions = []) {
   const normalized = normalizeSmallActions(actions);
   if (normalized.length === 0) {
-    return detailField("小さな行動", "");
+    return detailField("インサイドルール", "");
   }
 
   return `
     <section class="detail-field">
-      <h4>小さな行動</h4>
+      <h4>インサイドルール</h4>
       <div class="action-list">
         ${normalized
           .map(
@@ -756,7 +756,7 @@ function exportMarkdown() {
 - 試した後の心: ${record.afterMindScore}
 - 身体の変化: ${formatDelta(record.bodyDelta)}
 - 心の変化: ${formatDelta(record.mindDelta)}
-- 小さな行動: ${formatActionStats(record.smallActions)}
+- インサイドルール: ${formatActionStats(record.smallActions)}
 ${formatActionsForMarkdown(record.smallActions)}
 - 状態メモ: ${record.stateNote || ""}
 - 試して変わったこと: ${record.afterNote || ""}
@@ -779,7 +779,7 @@ function formatActionsForMarkdown(actions = []) {
   return normalized
     .map(
       (action, index) =>
-        `- 小さな行動${index + 1}: ${action.text || ""} / ${formatActionStatus(action.status)} / 負荷 ${action.effort || "-"} / ${action.note || ""}`,
+        `- インサイドルール${index + 1}: ${action.text || ""} / ${formatActionStatus(action.status)} / 負荷 ${action.effort || "-"} / ${action.note || ""}`,
     )
     .join("\n");
 }
