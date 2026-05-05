@@ -1,5 +1,8 @@
 const storageKey = "futsal-state-records-v1";
 const draftStorageKey = "futsal-state-draft-v1";
+let supabaseConfig = {};
+let isSupabaseConfigured = false;
+let supabaseClient = null;
 const docs = [
   {
     slug: "readme",
@@ -69,6 +72,20 @@ const docs = [
     path: "docs/daily-pressure-training.md",
     summary: "小さな約束を守り、プレッシャーはあるものとして扱う。",
   },
+  {
+    slug: "app-implementation-plan",
+    title: "Webアプリ実装計画",
+    path: "docs/app-implementation-plan.md",
+    summary: "準備フェーズ、サッカーノート、DBと認証の実装方針。",
+    tags: ["アプリ"],
+  },
+  {
+    slug: "supabase-setup",
+    title: "Supabase同期セットアップ",
+    path: "docs/supabase-setup.md",
+    summary: "Googleログイン、PostgreSQL、RLSで複数端末同期を有効にする手順。",
+    tags: ["アプリ"],
+  },
 ];
 
 const elements = {
@@ -100,6 +117,12 @@ const elements = {
   bodyAction: document.querySelector("#bodyAction"),
   wordAction: document.querySelector("#wordAction"),
   focusAction: document.querySelector("#focusAction"),
+  sceneNote: document.querySelector("#sceneNote"),
+  resultNote: document.querySelector("#resultNote"),
+  whyNote: document.querySelector("#whyNote"),
+  cognitionGap: document.querySelector("#cognitionGap"),
+  nextOptions: document.querySelector("#nextOptions"),
+  cueWord: document.querySelector("#cueWord"),
   tryPlan: document.querySelector("#tryPlan"),
   reflection: document.querySelector("#reflection"),
   saveDraftButton: document.querySelector("#saveDraftButton"),
@@ -116,12 +139,18 @@ const elements = {
   recordDetail: document.querySelector("#recordDetail"),
   docsList: document.querySelector("#docsList"),
   docsDetail: document.querySelector("#docsDetail"),
+  authPanel: document.querySelector("#authPanel"),
+  authStatus: document.querySelector("#authStatus"),
+  signInButton: document.querySelector("#signInButton"),
+  signOutButton: document.querySelector("#signOutButton"),
+  importLocalButton: document.querySelector("#importLocalButton"),
 };
 
 const ctx = elements.canvas.getContext("2d");
 const afterCtx = elements.afterCanvas.getContext("2d");
 
-let records = loadRecords();
+let records = [];
+let currentUser = null;
 let draftTimer;
 
 function nowDateTimeLocal() {
@@ -129,6 +158,22 @@ function nowDateTimeLocal() {
   date.setSeconds(0, 0);
   const offset = date.getTimezoneOffset() * 60000;
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+async function setupSupabase() {
+  supabaseConfig = window.FUTSAL_SUPABASE || (await loadSupabaseConfig());
+  isSupabaseConfigured = Boolean(supabaseConfig.url && supabaseConfig.anonKey && window.supabase?.createClient);
+  supabaseClient = isSupabaseConfigured ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey) : null;
+}
+
+async function loadSupabaseConfig() {
+  try {
+    const response = await fetch("config.json", { cache: "no-store" });
+    if (!response.ok) return {};
+    return response.json();
+  } catch {
+    return {};
+  }
 }
 
 function normalizeRecord(record) {
@@ -142,6 +187,12 @@ function normalizeRecord(record) {
     bodyDelta: record.bodyDelta ?? (record.afterBodyScore ?? record.bodyScore) - record.bodyScore,
     mindDelta: record.mindDelta ?? (record.afterMindScore ?? record.mindScore) - record.mindScore,
     smallActions: normalizeSmallActions(record.smallActions),
+    sceneNote: record.sceneNote || "",
+    resultNote: record.resultNote || "",
+    whyNote: record.whyNote || "",
+    cognitionGap: record.cognitionGap || "",
+    nextOptions: record.nextOptions || "",
+    cueWord: record.cueWord || "",
   };
 }
 
@@ -156,7 +207,7 @@ function normalizeSmallActions(actions = []) {
     .filter((action) => action.text || action.status || action.effort || action.note);
 }
 
-function loadRecords() {
+function loadLocalRecords() {
   try {
     return (JSON.parse(localStorage.getItem(storageKey)) || []).map(normalizeRecord);
   } catch {
@@ -164,8 +215,75 @@ function loadRecords() {
   }
 }
 
-function saveRecords() {
+function saveLocalRecords() {
   localStorage.setItem(storageKey, JSON.stringify(records));
+}
+
+async function loadRecords() {
+  if (!isSupabaseActive()) {
+    records = loadLocalRecords();
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("futsal_records")
+    .select("id, data, created_at, updated_at")
+    .order("date_time", { ascending: false });
+
+  if (error) {
+    showSaveStatus("記録の読み込みに失敗しました");
+    records = [];
+    return;
+  }
+
+  records = (data || []).map((row) =>
+    normalizeRecord({
+      ...(row.data || {}),
+      id: row.id,
+      createdAt: row.data?.createdAt || row.created_at,
+      updatedAt: row.data?.updatedAt || row.updated_at,
+    }),
+  );
+}
+
+async function saveRecord(record) {
+  if (!isSupabaseActive()) {
+    records.push(record);
+    saveLocalRecords();
+    return record;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("futsal_records")
+    .insert({
+      id: record.id,
+      user_id: currentUser.id,
+      date_time: record.dateTime,
+      data: record,
+    })
+    .select("id, data, created_at, updated_at")
+    .single();
+
+  if (error) throw error;
+  const saved = normalizeRecord({ ...(data.data || {}), id: data.id, createdAt: data.created_at, updatedAt: data.updated_at });
+  records.push(saved);
+  return saved;
+}
+
+async function deleteRecord(id) {
+  if (!isSupabaseActive()) {
+    records = records.filter((record) => record.id !== id);
+    saveLocalRecords();
+    return;
+  }
+
+  const { error } = await supabaseClient.from("futsal_records").delete().eq("id", id);
+  if (error) throw error;
+  records = records.filter((record) => record.id !== id);
+}
+
+function isSupabaseActive() {
+  return Boolean(isSupabaseConfigured && currentUser);
 }
 
 function getFormData() {
@@ -186,6 +304,12 @@ function getFormData() {
     bodyAction: elements.bodyAction.value.trim(),
     wordAction: elements.wordAction.value.trim(),
     focusAction: elements.focusAction.value.trim(),
+    sceneNote: elements.sceneNote.value.trim(),
+    resultNote: elements.resultNote.value.trim(),
+    whyNote: elements.whyNote.value.trim(),
+    cognitionGap: elements.cognitionGap.value.trim(),
+    nextOptions: elements.nextOptions.value.trim(),
+    cueWord: elements.cueWord.value.trim(),
     tryPlan: elements.tryPlan.value.trim(),
     reflection: elements.reflection.value.trim(),
     createdAt: new Date().toISOString(),
@@ -205,6 +329,12 @@ function getDraftData() {
     bodyAction: elements.bodyAction.value,
     wordAction: elements.wordAction.value,
     focusAction: elements.focusAction.value,
+    sceneNote: elements.sceneNote.value,
+    resultNote: elements.resultNote.value,
+    whyNote: elements.whyNote.value,
+    cognitionGap: elements.cognitionGap.value,
+    nextOptions: elements.nextOptions.value,
+    cueWord: elements.cueWord.value,
     tryPlan: elements.tryPlan.value,
     reflection: elements.reflection.value,
     updatedAt: new Date().toISOString(),
@@ -224,6 +354,12 @@ function setFormData(data) {
   elements.bodyAction.value = data.bodyAction ?? "";
   elements.wordAction.value = data.wordAction ?? "";
   elements.focusAction.value = data.focusAction ?? "";
+  elements.sceneNote.value = data.sceneNote ?? "";
+  elements.resultNote.value = data.resultNote ?? "";
+  elements.whyNote.value = data.whyNote ?? "";
+  elements.cognitionGap.value = data.cognitionGap ?? "";
+  elements.nextOptions.value = data.nextOptions ?? "";
+  elements.cueWord.value = data.cueWord ?? "";
   elements.tryPlan.value = data.tryPlan ?? "";
   elements.reflection.value = data.reflection ?? "";
 }
@@ -236,11 +372,34 @@ function loadDraft() {
   }
 }
 
+async function loadRemoteDraft() {
+  if (!isSupabaseActive()) return null;
+  const { data, error } = await supabaseClient.from("futsal_drafts").select("data").eq("user_id", currentUser.id).maybeSingle();
+  if (error) {
+    showSaveStatus("下書きの読み込みに失敗しました");
+    return null;
+  }
+  return data?.data || null;
+}
+
 function saveDraft(showMessage = true) {
-  localStorage.setItem(draftStorageKey, JSON.stringify(getDraftData()));
+  const draft = getDraftData();
+  localStorage.setItem(draftStorageKey, JSON.stringify(draft));
+  if (isSupabaseActive()) {
+    saveRemoteDraft(draft).catch(() => showSaveStatus("下書きの同期に失敗しました"));
+  }
   if (showMessage) {
     showSaveStatus("途中保存しました");
   }
+}
+
+async function saveRemoteDraft(draft) {
+  const { error } = await supabaseClient.from("futsal_drafts").upsert({
+    user_id: currentUser.id,
+    data: draft,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw error;
 }
 
 function scheduleDraftSave() {
@@ -253,10 +412,95 @@ function scheduleDraftSave() {
 
 function clearDraft() {
   localStorage.removeItem(draftStorageKey);
+  if (isSupabaseActive()) {
+    supabaseClient.from("futsal_drafts").delete().eq("user_id", currentUser.id).then(({ error }) => {
+      if (error) showSaveStatus("下書きの削除に失敗しました");
+    });
+  }
 }
 
 function showSaveStatus(message) {
   elements.saveStatus.textContent = message;
+}
+
+function updateAuthUi() {
+  if (!elements.authPanel) return;
+
+  if (!isSupabaseConfigured) {
+    elements.authPanel.hidden = true;
+    return;
+  }
+
+  elements.authPanel.hidden = false;
+  const localCount = loadLocalRecords().length;
+
+  if (currentUser) {
+    elements.authStatus.textContent = `${currentUser.email || "ログイン中"} として同期しています。`;
+    elements.signInButton.hidden = true;
+    elements.signOutButton.hidden = false;
+    elements.importLocalButton.hidden = localCount === 0;
+    return;
+  }
+
+  elements.authStatus.textContent = "Googleログインすると、スマホ2台やPCから同じ記録を見られます。";
+  elements.signInButton.hidden = false;
+  elements.signOutButton.hidden = true;
+  elements.importLocalButton.hidden = true;
+}
+
+async function signInWithGoogle() {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin + window.location.pathname,
+    },
+  });
+  if (error) showSaveStatus("Googleログインを開始できませんでした");
+}
+
+async function signOut() {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    showSaveStatus("ログアウトに失敗しました");
+    return;
+  }
+  currentUser = null;
+  records = [];
+  updateAuthUi();
+  renderRecords();
+  showSaveStatus("ログアウトしました");
+  navigate("#/new");
+}
+
+async function importLocalRecords() {
+  if (!isSupabaseActive()) return;
+  const localRecords = loadLocalRecords();
+  if (localRecords.length === 0) return;
+
+  const rows = localRecords.map((record) => {
+    const normalized = normalizeRecord(record);
+    return {
+      id: normalized.id,
+      user_id: currentUser.id,
+      date_time: normalized.dateTime,
+      data: normalized,
+      updated_at: new Date().toISOString(),
+    };
+  });
+
+  const { error } = await supabaseClient.from("futsal_records").upsert(rows);
+  if (error) {
+    showSaveStatus("この端末の記録を取り込めませんでした");
+    return;
+  }
+
+  localStorage.removeItem(storageKey);
+  await loadRecords();
+  renderRecords();
+  updateAuthUi();
+  showSaveStatus("この端末の記録を取り込みました");
 }
 
 function setDefaultDateTime() {
@@ -498,6 +742,11 @@ function renderRecords() {
   const sorted = sortRecords(records);
   elements.recordCount.textContent = `${records.length}件`;
 
+  if (isSupabaseConfigured && !currentUser) {
+    elements.records.innerHTML = '<p class="empty">Googleログインすると記録を同期して表示できます。</p>';
+    return;
+  }
+
   if (sorted.length === 0) {
     elements.records.innerHTML = '<p class="empty">まだ記録はありません。</p>';
     return;
@@ -523,11 +772,22 @@ function renderRecords() {
               <button class="delete-button" type="button" data-delete="${record.id}">削除</button>
             </div>
           </div>
-          <p class="record-summary">${escapeHtml(record.tryPlan || getFirstActionText(record.smallActions) || record.stateNote || "記録詳細から内容を確認できます。")}</p>
+          <p class="record-summary">${escapeHtml(getRecordSummary(record))}</p>
         </article>
       `,
     )
     .join("");
+}
+
+function getRecordSummary(record) {
+  return (
+    record.cueWord ||
+    record.sceneNote ||
+    record.tryPlan ||
+    getFirstActionText(record.smallActions) ||
+    record.stateNote ||
+    "記録詳細から内容を確認できます。"
+  );
 }
 
 function getFirstActionText(actions = []) {
@@ -558,12 +818,18 @@ function renderDetail(id) {
     <div class="detail-grid">
       ${detailField("今の状態メモ", record.stateNote)}
       ${actionsDetailField(record.smallActions)}
-      ${detailField("からだ", record.bodyAction)}
-      ${detailField("ことば", record.wordAction)}
-      ${detailField("いしき", record.focusAction)}
-      ${detailField("試して変わったこと", record.afterNote)}
-      ${detailField("今日トライすること", record.tryPlan)}
-      ${detailField("終わった後の振り返り", record.reflection)}
+      ${detailField("生活準備", record.bodyAction)}
+      ${detailField("気持ちの準備", record.wordAction)}
+      ${detailField("集中の準備", record.focusAction)}
+      ${detailField("活動後の状態メモ", record.afterNote)}
+      ${detailField("場面", record.sceneNote)}
+      ${detailField("結果", record.resultNote)}
+      ${detailField("なぜ", record.whyNote)}
+      ${detailField("認知の穴", record.cognitionGap)}
+      ${detailField("次の選択肢", record.nextOptions)}
+      ${detailField("合言葉", record.cueWord)}
+      ${detailField("できたこと", record.tryPlan)}
+      ${detailField("次回の準備へ戻すこと", record.reflection)}
     </div>
   `;
 }
@@ -730,6 +996,12 @@ function clearForm() {
   elements.bodyAction.value = "";
   elements.wordAction.value = "";
   elements.focusAction.value = "";
+  elements.sceneNote.value = "";
+  elements.resultNote.value = "";
+  elements.whyNote.value = "";
+  elements.cognitionGap.value = "";
+  elements.nextOptions.value = "";
+  elements.cueWord.value = "";
   elements.tryPlan.value = "";
   elements.reflection.value = "";
   setDefaultDateTime();
@@ -739,14 +1011,17 @@ function clearForm() {
   showSaveStatus("入力をクリアしました");
 }
 
-function saveCurrentRecord() {
+async function saveCurrentRecord() {
   const record = getFormData();
-  records.push(record);
-  saveRecords();
-  clearForm();
-  showSaveStatus("記録しました");
-  renderRecords();
-  navigate(`#/records/${encodeURIComponent(record.id)}`);
+  try {
+    const saved = await saveRecord(record);
+    clearForm();
+    showSaveStatus("記録しました");
+    renderRecords();
+    navigate(`#/records/${encodeURIComponent(saved.id)}`);
+  } catch {
+    showSaveStatus("記録に失敗しました");
+  }
 }
 
 function download(filename, content, type) {
@@ -772,19 +1047,25 @@ function exportMarkdown() {
 
 - 身体の状態: ${record.bodyScore}
 - 心の状態: ${record.mindScore}
-- 試した後の身体: ${record.afterBodyScore}
-- 試した後の心: ${record.afterMindScore}
+- 活動後の身体: ${record.afterBodyScore}
+- 活動後の心: ${record.afterMindScore}
 - 身体の変化: ${formatDelta(record.bodyDelta)}
 - 心の変化: ${formatDelta(record.mindDelta)}
 - インサイドルール: ${formatActionStats(record.smallActions)}
 ${formatActionsForMarkdown(record.smallActions)}
 - 状態メモ: ${record.stateNote || ""}
-- 試して変わったこと: ${record.afterNote || ""}
-- からだ: ${record.bodyAction || ""}
-- ことば: ${record.wordAction || ""}
-- いしき: ${record.focusAction || ""}
-- トライ: ${record.tryPlan || ""}
-- 振り返り: ${record.reflection || ""}
+- 生活準備: ${record.bodyAction || ""}
+- 気持ちの準備: ${record.wordAction || ""}
+- 集中の準備: ${record.focusAction || ""}
+- 活動後の状態メモ: ${record.afterNote || ""}
+- 場面: ${record.sceneNote || ""}
+- 結果: ${record.resultNote || ""}
+- なぜ: ${record.whyNote || ""}
+- 認知の穴: ${record.cognitionGap || ""}
+- 次の選択肢: ${record.nextOptions || ""}
+- 合言葉: ${record.cueWord || ""}
+- できたこと: ${record.tryPlan || ""}
+- 次回の準備へ戻すこと: ${record.reflection || ""}
 `,
     )
     .join("\n");
@@ -833,6 +1114,9 @@ function attachEvents() {
   elements.saveDraftButton.addEventListener("click", () => saveDraft(true));
   elements.saveButton.addEventListener("click", saveCurrentRecord);
   elements.clearButton.addEventListener("click", clearForm);
+  elements.signInButton.addEventListener("click", signInWithGoogle);
+  elements.signOutButton.addEventListener("click", signOut);
+  elements.importLocalButton.addEventListener("click", importLocalRecords);
   elements.downloadButton.addEventListener("click", openDownloadModal);
   elements.downloadJsonButton.addEventListener("click", exportJson);
   elements.downloadMarkdownButton.addEventListener("click", exportMarkdown);
@@ -875,6 +1159,12 @@ function attachEvents() {
     elements.bodyAction,
     elements.wordAction,
     elements.focusAction,
+    elements.sceneNote,
+    elements.resultNote,
+    elements.whyNote,
+    elements.cognitionGap,
+    elements.nextOptions,
+    elements.cueWord,
     elements.tryPlan,
     elements.reflection,
   ].forEach((input) => {
@@ -882,7 +1172,7 @@ function attachEvents() {
     input.addEventListener("change", scheduleDraftSave);
   });
 
-  elements.records.addEventListener("click", (event) => {
+  elements.records.addEventListener("click", async (event) => {
     const detailId = event.target.dataset.detail;
     const deleteId = event.target.dataset.delete;
 
@@ -892,9 +1182,13 @@ function attachEvents() {
     }
 
     if (!deleteId) return;
-    records = records.filter((record) => record.id !== deleteId);
-    saveRecords();
-    renderRecords();
+    try {
+      await deleteRecord(deleteId);
+      renderRecords();
+      showSaveStatus("削除しました");
+    } catch {
+      showSaveStatus("削除に失敗しました");
+    }
   });
 
   elements.docsList.addEventListener("click", (event) => {
@@ -905,15 +1199,41 @@ function attachEvents() {
   });
 }
 
-setDefaultDateTime();
-const draft = loadDraft();
-if (draft) {
-  setFormData(draft);
-  showSaveStatus("途中保存を復元しました");
+async function initializeApp() {
+  await setupSupabase();
+  setDefaultDateTime();
+  attachEvents();
+
+  if (supabaseClient) {
+    const { data, error } = await supabaseClient.auth.getUser();
+    currentUser = error ? null : data.user;
+    supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+      currentUser = session?.user || null;
+      await refreshCloudState();
+    });
+  }
+
+  await refreshCloudState();
+  updateScoreLabels();
+  drawAllCharts();
+  renderDocsList();
+  handleRoute();
 }
-updateScoreLabels();
-drawAllCharts();
-renderRecords();
-renderDocsList();
-attachEvents();
-handleRoute();
+
+async function refreshCloudState() {
+  updateAuthUi();
+  await loadRecords();
+  renderRecords();
+
+  const draft = (await loadRemoteDraft()) || loadDraft();
+  if (draft) {
+    setFormData(draft);
+    updateScoreLabels();
+    drawAllCharts();
+    showSaveStatus("途中保存を復元しました");
+  }
+}
+
+initializeApp().catch(() => {
+  showSaveStatus("初期化に失敗しました");
+});
