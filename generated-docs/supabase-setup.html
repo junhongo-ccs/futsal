@@ -1,0 +1,36 @@
+<h1>Supabase同期セットアップ</h1>
+<p>このアプリは、<code>config.json</code> がない場合は従来通りブラウザ内の <code>localStorage</code> に保存する。<code>config.json</code> にSupabase設定を入れると、GoogleログインとPostgreSQL保存に切り替わる。</p>
+<h2>1. Supabaseプロジェクトを作る</h2>
+<p>Supabaseで新しいプロジェクトを作成する。</p>
+<p>必要な値:</p>
+<ul><li>Project URL</li><li>anon public key</li></ul>
+<h2>2. テーブルとRLSを作る</h2>
+<p>Supabase DashboardのSQL Editorで <a href="../supabase/schema.sql">supabase/schema.sql</a> を実行する。</p>
+<p>このSQLは次を作る。</p>
+<ul><li><code>futsal_records</code>: 確定した記録</li><li><code>futsal_drafts</code>: 途中保存</li><li>Row Level Security</li><li>ログイン中ユーザー本人の行だけを読める、書ける、消せるポリシー</li></ul>
+<h2>3. Google認証を有効にする</h2>
+<p>Supabase DashboardでGoogle providerを有効にする。</p>
+<p>設定するURL:</p>
+<ul><li>Site URL: 公開するアプリのURL</li><li>Redirect URLs: 公開URLとローカル確認URL</li></ul>
+<p>例:</p>
+<p><code>`</code>text</p>
+<p>https://&lt;username&gt;.github.io/futsal/</p>
+<p>http://localhost:4173/</p>
+<p><code>`</code></p>
+<p>Google Cloud Console側でもOAuthクライアントを作り、SupabaseのCallback URLを承認済みリダイレクトURIに入れる。</p>
+<h2>4. config.jsonを作る</h2>
+<p><code>config.example.json</code> をコピーして <code>config.json</code> を作る。</p>
+<p><code>`</code>json</p>
+<p>{</p>
+<p>&quot;url&quot;: &quot;https://YOUR_PROJECT_REF.supabase.co&quot;,</p>
+<p>&quot;anonKey&quot;: &quot;YOUR_SUPABASE_ANON_KEY&quot;</p>
+<p>}</p>
+<p><code>`</code></p>
+<p><code>anonKey</code> はブラウザに置く公開キー。安全性はキーを隠すことではなく、RLSポリシーで本人の行だけを許可することで担保する。</p>
+<h2>5. 動作確認</h2>
+<p>ローカルサーバーを起動する。</p>
+<p><code>`</code>bash</p>
+<p>python3 -m http.server 4173</p>
+<p><code>`</code></p>
+<p>確認すること:</p>
+<ul><li>Googleログインできる</li><li>途中保存が復元される</li><li>記録すると <code>futsal_records</code> に保存される</li><li>スマホ2台やPCで同じGoogleアカウントにログインすると同じ記録が見える</li><li>この端末に残っていたローカル記録を「この端末の記録を取り込む」でクラウドへ移せる</li></ul>

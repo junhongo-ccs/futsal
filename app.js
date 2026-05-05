@@ -7,84 +7,91 @@ const docs = [
   {
     slug: "readme",
     title: "週末フットサルの目的",
-    path: "README.md",
+    path: "generated-docs/readme.html",
     summary: "全体の入口。目的、使い方、Webアプリの説明。",
   },
   {
     slug: "purpose",
     title: "自分のフットサルの目的",
-    path: "docs/purpose.md",
+    path: "generated-docs/purpose.html",
     summary: "週末フットサルで立ち戻る目的。",
   },
   {
     slug: "thinking",
     title: "目的論と原因論",
-    path: "docs/thinking.md",
+    path: "generated-docs/thinking.html",
     summary: "原因を見つけ、次の目的へ変える考え方。",
   },
   {
     slug: "preparation",
     title: "本番で安定するための準備力",
-    path: "docs/preparation.md",
+    path: "generated-docs/preparation.html",
     summary: "価値観、意識、技術を整える。",
   },
   {
     slug: "awareness",
     title: "意識系とは何か",
-    path: "docs/awareness.md",
+    path: "generated-docs/awareness.html",
     summary: "見る、切り替える、次に関わる。",
   },
   {
     slug: "body-sense",
     title: "体感覚に落とし込む",
-    path: "docs/body-sense.md",
+    path: "generated-docs/body-sense.html",
     summary: "マインドを身体の合図に変える。",
   },
   {
     slug: "peripheral-vision-dribbling",
     title: "間接視野でボールを扱う",
-    path: "docs/peripheral-vision-dribbling.md",
+    path: "generated-docs/peripheral-vision-dribbling.html",
     summary: "顔を上げ、周辺視野と触覚でボールを管理する。",
     tags: ["スキル"],
   },
   {
     slug: "dribbling-vision-map",
     title: "ドリブル中の視線マップ",
-    path: "docs/dribbling-vision-map.md",
+    path: "generated-docs/dribbling-vision-map.html",
     summary: "見る場所、順番、頻度を決めて判断を速くする。",
     tags: ["スキル"],
   },
   {
     slug: "mental-control",
     title: "からだ、ことば、いしきで整える",
-    path: "docs/mental-control.md",
+    path: "generated-docs/mental-control.html",
     summary: "結果ではなく、まず状態を整える。",
   },
   {
     slug: "pressure-control",
     title: "狭いコートでのプレッシャー対処",
-    path: "docs/pressure-control.md",
+    path: "generated-docs/pressure-control.html",
     summary: "速い寄せの中で、受け入れ、外を見て、次に関わる。",
   },
   {
     slug: "daily-pressure-training",
     title: "日常の小さなプレッシャー訓練",
-    path: "docs/daily-pressure-training.md",
+    path: "generated-docs/daily-pressure-training.html",
     summary: "小さな約束を守り、プレッシャーはあるものとして扱う。",
   },
   {
     slug: "app-implementation-plan",
     title: "Webアプリ実装計画",
-    path: "docs/app-implementation-plan.md",
+    path: "generated-docs/app-implementation-plan.html",
     summary: "準備フェーズ、サッカーノート、DBと認証の実装方針。",
     tags: ["アプリ"],
   },
   {
     slug: "supabase-setup",
     title: "Supabase同期セットアップ",
-    path: "docs/supabase-setup.md",
+    path: "generated-docs/supabase-setup.html",
     summary: "Googleログイン、PostgreSQL、RLSで複数端末同期を有効にする手順。",
     tags: ["アプリ"],
+  },
+  {
+    slug: "reflection-template",
+    title: "振り返りテンプレート",
+    path: "generated-docs/reflection-template.html",
+    summary: "週末フットサルの振り返りに使う記録テンプレート。",
+    tags: ["テンプレート"],
   },
 ];
 
@@ -894,78 +901,10 @@ async function renderDocsDetail(slug) {
   try {
     const response = await fetch(doc.path);
     if (!response.ok) throw new Error(`Failed to load ${doc.path}`);
-    const markdown = await response.text();
-    elements.docsDetail.innerHTML = renderMarkdown(markdown);
+    elements.docsDetail.innerHTML = await response.text();
   } catch {
     elements.docsDetail.innerHTML = '<p class="empty">ドキュメントを読み込めませんでした。</p>';
   }
-}
-
-function renderMarkdown(markdown) {
-  const lines = markdown.split(/\r?\n/);
-  const html = [];
-  let listItems = [];
-  let quoteLines = [];
-
-  function flushList() {
-    if (listItems.length === 0) return;
-    html.push(`<ul>${listItems.map((item) => `<li>${formatInline(item)}</li>`).join("")}</ul>`);
-    listItems = [];
-  }
-
-  function flushQuote() {
-    if (quoteLines.length === 0) return;
-    html.push(`<blockquote>${quoteLines.map((line) => `<p>${formatInline(line)}</p>`).join("")}</blockquote>`);
-    quoteLines = [];
-  }
-
-  lines.forEach((line) => {
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      flushList();
-      flushQuote();
-      return;
-    }
-
-    if (trimmed.startsWith("> ")) {
-      flushList();
-      quoteLines.push(trimmed.slice(2));
-      return;
-    }
-
-    if (trimmed.startsWith("- ")) {
-      flushQuote();
-      listItems.push(trimmed.slice(2));
-      return;
-    }
-
-    flushList();
-    flushQuote();
-
-    if (trimmed.startsWith("### ")) {
-      html.push(`<h3>${formatInline(trimmed.slice(4))}</h3>`);
-    } else if (trimmed.startsWith("## ")) {
-      html.push(`<h2>${formatInline(trimmed.slice(3))}</h2>`);
-    } else if (trimmed.startsWith("# ")) {
-      html.push(`<h1>${formatInline(trimmed.slice(2))}</h1>`);
-    } else if (/^\d+\.\s/.test(trimmed)) {
-      html.push(`<p>${formatInline(trimmed)}</p>`);
-    } else {
-      html.push(`<p>${formatInline(trimmed)}</p>`);
-    }
-  });
-
-  flushList();
-  flushQuote();
-  return html.join("");
-}
-
-function formatInline(value) {
-  return escapeHtml(value)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
 }
 
 function detailField(label, value) {
