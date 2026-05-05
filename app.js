@@ -898,7 +898,8 @@ function attachEvents() {
   });
 
   elements.docsList.addEventListener("click", (event) => {
-    const slug = event.target.dataset.doc;
+    const card = event.target.closest("[data-doc]");
+    const slug = card?.dataset.doc;
     if (!slug) return;
     navigate(`#/docs/${encodeURIComponent(slug)}`);
   });
