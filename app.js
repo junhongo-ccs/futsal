@@ -853,9 +853,10 @@ function renderRecords() {
 
 function getRecordSummary(record) {
   return (
-    record.cueWord ||
-    record.sceneNote ||
+    record.resultNote ||
     record.tryPlan ||
+    record.sceneNote ||
+    record.cueWord ||
     getFirstActionText(record.smallActions) ||
     record.stateNote ||
     "記録詳細から内容を確認できます。"
@@ -895,15 +896,15 @@ function renderDetail(id) {
       ${detailField("気持ちの準備", record.wordAction)}
       ${detailField("集中の準備", record.focusAction)}
       ${detailField("活動後の状態メモ", record.afterNote)}
-      ${detailField("場面", record.sceneNote)}
-      ${detailField("結果", record.resultNote)}
-      ${detailField("なぜ", record.whyNote)}
-      ${detailField("認知の穴", record.cognitionGap)}
-      ${detailField("次の選択肢", record.nextOptions)}
-      ${detailField("合言葉", record.cueWord)}
+      ${detailField("今日よかった場面", record.sceneNote)}
+      ${detailField("何がよかったか", record.resultNote)}
+      ${detailField("なぜよかったか", record.whyNote)}
+      ${detailField("再現するきっかけ", record.cognitionGap)}
+      ${detailField("次も少し増やしたいこと", record.nextOptions)}
+      ${detailField("次回の合言葉", record.cueWord)}
       ${videoDetailField(record.videoUrl)}
-      ${detailField("できたこと", record.tryPlan)}
-      ${detailField("次回の準備へ戻すこと", record.reflection)}
+      ${detailField("気になったポイント", record.tryPlan)}
+      ${detailField("次回へどう生かすか", record.reflection)}
     </div>
   `;
 }
@@ -1132,15 +1133,15 @@ ${formatActionsForMarkdown(record.smallActions)}
 - 気持ちの準備: ${record.wordAction || ""}
 - 集中の準備: ${record.focusAction || ""}
 - 活動後の状態メモ: ${record.afterNote || ""}
-- 場面: ${record.sceneNote || ""}
-- 結果: ${record.resultNote || ""}
-- なぜ: ${record.whyNote || ""}
-- 認知の穴: ${record.cognitionGap || ""}
-- 次の選択肢: ${record.nextOptions || ""}
-- 合言葉: ${record.cueWord || ""}
+- 今日よかった場面: ${record.sceneNote || ""}
+- 何がよかったか: ${record.resultNote || ""}
+- なぜよかったか: ${record.whyNote || ""}
+- 再現するきっかけ: ${record.cognitionGap || ""}
+- 次も少し増やしたいこと: ${record.nextOptions || ""}
+- 次回の合言葉: ${record.cueWord || ""}
 - 動画URL: ${record.videoUrl || ""}
-- できたこと: ${record.tryPlan || ""}
-- 次回の準備へ戻すこと: ${record.reflection || ""}
+- 気になったポイント: ${record.tryPlan || ""}
+- 次回へどう生かすか: ${record.reflection || ""}
 `,
     )
     .join("\n");
