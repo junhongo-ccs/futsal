@@ -119,6 +119,7 @@ const elements = {
   afterMindValueLabel: document.querySelector("#afterMindValueLabel"),
   deltaLabel: document.querySelector("#deltaLabel"),
   recordDateTime: document.querySelector("#recordDateTime"),
+  courtName: document.querySelector("#courtName"),
   stateNote: document.querySelector("#stateNote"),
   afterNote: document.querySelector("#afterNote"),
   smallActionRows: Array.from(document.querySelectorAll(".small-action")),
@@ -196,6 +197,7 @@ function normalizeRecord(record) {
     ...record,
     dateTime,
     date: record.date || dateTime.slice(0, 10),
+    courtName: record.courtName || "",
     afterBodyScore: record.afterBodyScore ?? record.bodyScore,
     afterMindScore: record.afterMindScore ?? record.mindScore,
     bodyDelta: record.bodyDelta ?? (record.afterBodyScore ?? record.bodyScore) - record.bodyScore,
@@ -307,6 +309,7 @@ function getFormData() {
     id: crypto.randomUUID(),
     dateTime,
     date: dateTime.slice(0, 10),
+    courtName: elements.courtName.value,
     bodyScore: Number(elements.bodyScore.value),
     mindScore: Number(elements.mindScore.value),
     afterBodyScore: Number(elements.afterBodyScore.value),
@@ -335,6 +338,7 @@ function getFormData() {
 function getDraftData() {
   return {
     dateTime: elements.recordDateTime.value || nowDateTimeLocal(),
+    courtName: elements.courtName.value,
     bodyScore: elements.bodyScore.value,
     mindScore: elements.mindScore.value,
     afterBodyScore: elements.afterBodyScore.value,
@@ -361,6 +365,7 @@ function getDraftData() {
 function setFormData(data) {
   if (!data) return;
   elements.recordDateTime.value = data.dateTime || (data.date ? `${data.date}T00:00` : nowDateTimeLocal());
+  elements.courtName.value = data.courtName ?? "";
   elements.bodyScore.value = data.bodyScore ?? "5";
   elements.mindScore.value = data.mindScore ?? "5";
   elements.afterBodyScore.value = data.afterBodyScore ?? "5";
@@ -807,6 +812,7 @@ function renderRecords() {
             <div>
               <div class="record-date">${escapeHtml(formatDateTime(record.dateTime))}</div>
               <div class="record-scores">
+                ${record.courtName ? `<span class="pill">${escapeHtml(record.courtName)}</span>` : ""}
                 <span class="pill">${escapeHtml(formatActionStats(record.smallActions))}</span>
                 <span class="pill">身体 ${record.bodyScore}</span>
                 <span class="pill">心 ${record.mindScore}</span>
@@ -853,6 +859,7 @@ function renderDetail(id) {
       <div>
         <p class="eyebrow">日時</p>
         <h3>${escapeHtml(formatDateTime(record.dateTime))}</h3>
+        ${record.courtName ? `<p class="hint">参加コート: ${escapeHtml(record.courtName)}</p>` : ""}
       </div>
       <div class="record-scores">
         <span class="pill">${escapeHtml(formatActionStats(record.smallActions))}</span>
@@ -1011,6 +1018,7 @@ function clearForm() {
   elements.mindScore.value = "5";
   elements.afterBodyScore.value = "5";
   elements.afterMindScore.value = "5";
+  elements.courtName.value = "";
   elements.stateNote.value = "";
   elements.afterNote.value = "";
   setSmallActions([]);
@@ -1069,6 +1077,7 @@ function exportMarkdown() {
 
 - 身体の状態: ${record.bodyScore}
 - 心の状態: ${record.mindScore}
+- 参加コート: ${record.courtName || ""}
 - 活動後の身体: ${record.afterBodyScore}
 - 活動後の心: ${record.afterMindScore}
 - 身体の変化: ${formatDelta(record.bodyDelta)}
@@ -1183,6 +1192,7 @@ function attachEvents() {
     elements.afterBodyScore,
     elements.afterMindScore,
     elements.recordDateTime,
+    elements.courtName,
     elements.stateNote,
     elements.afterNote,
     ...elements.smallActionRows.flatMap((row) => [
