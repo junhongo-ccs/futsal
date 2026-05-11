@@ -1,5 +1,6 @@
 const storageKey = "futsal-state-records-v1";
 const draftStorageKey = "futsal-state-draft-v1";
+const syncOnboardingSeenKey = "futsal-sync-onboarding-seen-v1";
 let supabaseConfig = {};
 let isSupabaseConfigured = false;
 let supabaseClient = null;
@@ -130,6 +131,7 @@ const elements = {
   cognitionGap: document.querySelector("#cognitionGap"),
   nextOptions: document.querySelector("#nextOptions"),
   cueWord: document.querySelector("#cueWord"),
+  videoUrl: document.querySelector("#videoUrl"),
   tryPlan: document.querySelector("#tryPlan"),
   reflection: document.querySelector("#reflection"),
   saveDraftButton: document.querySelector("#saveDraftButton"),
@@ -151,6 +153,11 @@ const elements = {
   signInButton: document.querySelector("#signInButton"),
   signOutButton: document.querySelector("#signOutButton"),
   importLocalButton: document.querySelector("#importLocalButton"),
+  syncBanner: document.querySelector("#syncBanner"),
+  openSyncSplashButton: document.querySelector("#openSyncSplashButton"),
+  syncSplashModal: document.querySelector("#syncSplashModal"),
+  syncSplashLoginButton: document.querySelector("#syncSplashLoginButton"),
+  syncSplashLaterButton: document.querySelector("#syncSplashLaterButton"),
 };
 
 const ctx = elements.canvas.getContext("2d");
@@ -200,6 +207,7 @@ function normalizeRecord(record) {
     cognitionGap: record.cognitionGap || "",
     nextOptions: record.nextOptions || "",
     cueWord: record.cueWord || "",
+    videoUrl: typeof record.videoUrl === "string" ? record.videoUrl.trim() : "",
   };
 }
 
@@ -317,6 +325,7 @@ function getFormData() {
     cognitionGap: elements.cognitionGap.value.trim(),
     nextOptions: elements.nextOptions.value.trim(),
     cueWord: elements.cueWord.value.trim(),
+    videoUrl: elements.videoUrl.value.trim(),
     tryPlan: elements.tryPlan.value.trim(),
     reflection: elements.reflection.value.trim(),
     createdAt: new Date().toISOString(),
@@ -342,6 +351,7 @@ function getDraftData() {
     cognitionGap: elements.cognitionGap.value,
     nextOptions: elements.nextOptions.value,
     cueWord: elements.cueWord.value,
+    videoUrl: elements.videoUrl.value,
     tryPlan: elements.tryPlan.value,
     reflection: elements.reflection.value,
     updatedAt: new Date().toISOString(),
@@ -367,6 +377,7 @@ function setFormData(data) {
   elements.cognitionGap.value = data.cognitionGap ?? "";
   elements.nextOptions.value = data.nextOptions ?? "";
   elements.cueWord.value = data.cueWord ?? "";
+  elements.videoUrl.value = data.videoUrl ?? "";
   elements.tryPlan.value = data.tryPlan ?? "";
   elements.reflection.value = data.reflection ?? "";
 }
@@ -432,31 +443,60 @@ function showSaveStatus(message) {
 
 function updateAuthUi() {
   if (!elements.authPanel) return;
+  elements.authPanel.hidden = true;
 
   if (!isSupabaseConfigured) {
-    elements.authPanel.hidden = true;
+    if (elements.syncBanner) elements.syncBanner.hidden = true;
+    if (elements.syncSplashModal) elements.syncSplashModal.hidden = true;
     return;
   }
 
-  elements.authPanel.hidden = false;
+  if (!elements.syncBanner) return;
   const localCount = loadLocalRecords().length;
 
   if (currentUser) {
+    elements.syncBanner.hidden = true;
     elements.authStatus.textContent = `${currentUser.email || "ログイン中"} として同期しています。`;
-    elements.signInButton.hidden = true;
-    elements.signOutButton.hidden = false;
-    elements.importLocalButton.hidden = localCount === 0;
+    if (elements.signInButton) elements.signInButton.hidden = true;
+    if (elements.signOutButton) elements.signOutButton.hidden = false;
+    if (elements.importLocalButton) elements.importLocalButton.hidden = localCount === 0;
+    markSyncOnboardingSeen();
     return;
   }
 
+  elements.syncBanner.hidden = false;
   elements.authStatus.textContent = "Googleログインすると、スマホ2台やPCから同じ記録を見られます。";
-  elements.signInButton.hidden = false;
-  elements.signOutButton.hidden = true;
-  elements.importLocalButton.hidden = true;
+  if (elements.signInButton) elements.signInButton.hidden = false;
+  if (elements.signOutButton) elements.signOutButton.hidden = true;
+  if (elements.importLocalButton) elements.importLocalButton.hidden = true;
+}
+
+function hasSeenSyncOnboarding() {
+  return localStorage.getItem(syncOnboardingSeenKey) === "1";
+}
+
+function markSyncOnboardingSeen() {
+  localStorage.setItem(syncOnboardingSeenKey, "1");
+}
+
+function openSyncSplash() {
+  if (!elements.syncSplashModal || currentUser || !isSupabaseConfigured) return;
+  elements.syncSplashModal.hidden = false;
+}
+
+function closeSyncSplash() {
+  if (!elements.syncSplashModal) return;
+  elements.syncSplashModal.hidden = true;
+}
+
+function maybeOpenSyncSplash() {
+  if (!isSupabaseConfigured || currentUser || hasSeenSyncOnboarding()) return;
+  openSyncSplash();
 }
 
 async function signInWithGoogle() {
   if (!supabaseClient) return;
+  markSyncOnboardingSeen();
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -835,10 +875,34 @@ function renderDetail(id) {
       ${detailField("認知の穴", record.cognitionGap)}
       ${detailField("次の選択肢", record.nextOptions)}
       ${detailField("合言葉", record.cueWord)}
+      ${videoDetailField(record.videoUrl)}
       ${detailField("できたこと", record.tryPlan)}
       ${detailField("次回の準備へ戻すこと", record.reflection)}
     </div>
   `;
+}
+
+function videoDetailField(rawUrl) {
+  const safeUrl = toSafeHttpUrl(rawUrl);
+  if (safeUrl) {
+    return `
+      <section class="detail-field">
+        <h4>動画リンク</h4>
+        <p><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">動画を開く</a></p>
+      </section>
+    `;
+  }
+
+  if (rawUrl) {
+    return `
+      <section class="detail-field">
+        <h4>動画リンク</h4>
+        <p>${escapeHtml(rawUrl)}</p>
+      </section>
+    `;
+  }
+
+  return detailField("動画リンク", "");
 }
 
 function actionsDetailField(actions = []) {
@@ -903,7 +967,14 @@ async function renderDocsDetail(slug) {
     if (!response.ok) throw new Error(`Failed to load ${doc.path}`);
     elements.docsDetail.innerHTML = await response.text();
   } catch {
-    elements.docsDetail.innerHTML = '<p class="empty">ドキュメントを読み込めませんでした。</p>';
+    const directUrl = escapeHtml(new URL(doc.path, window.location.href).toString());
+    elements.docsDetail.innerHTML = `
+      <p class="empty">ドキュメントを読み込めませんでした。</p>
+      <p class="hint">` +
+      `ローカルファイルを直接開いている場合は、簡易サーバー経由で開くと表示できます。` +
+      `</p>
+      <p><a href="${directUrl}" target="_blank" rel="noopener noreferrer">ドキュメントを直接開く</a></p>
+    `;
   }
 }
 
@@ -924,6 +995,17 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function toSafeHttpUrl(rawUrl) {
+  if (!rawUrl) return "";
+  try {
+    const url = new URL(rawUrl);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "";
+    return url.toString();
+  } catch {
+    return "";
+  }
+}
+
 function clearForm() {
   elements.bodyScore.value = "5";
   elements.mindScore.value = "5";
@@ -941,6 +1023,7 @@ function clearForm() {
   elements.cognitionGap.value = "";
   elements.nextOptions.value = "";
   elements.cueWord.value = "";
+  elements.videoUrl.value = "";
   elements.tryPlan.value = "";
   elements.reflection.value = "";
   setDefaultDateTime();
@@ -1003,6 +1086,7 @@ ${formatActionsForMarkdown(record.smallActions)}
 - 認知の穴: ${record.cognitionGap || ""}
 - 次の選択肢: ${record.nextOptions || ""}
 - 合言葉: ${record.cueWord || ""}
+- 動画URL: ${record.videoUrl || ""}
 - できたこと: ${record.tryPlan || ""}
 - 次回の準備へ戻すこと: ${record.reflection || ""}
 `,
@@ -1056,6 +1140,12 @@ function attachEvents() {
   elements.signInButton.addEventListener("click", signInWithGoogle);
   elements.signOutButton.addEventListener("click", signOut);
   elements.importLocalButton.addEventListener("click", importLocalRecords);
+  elements.openSyncSplashButton?.addEventListener("click", openSyncSplash);
+  elements.syncSplashLoginButton?.addEventListener("click", signInWithGoogle);
+  elements.syncSplashLaterButton?.addEventListener("click", () => {
+    markSyncOnboardingSeen();
+    closeSyncSplash();
+  });
   elements.downloadButton.addEventListener("click", openDownloadModal);
   elements.downloadJsonButton.addEventListener("click", exportJson);
   elements.downloadMarkdownButton.addEventListener("click", exportMarkdown);
@@ -1063,6 +1153,12 @@ function attachEvents() {
   elements.downloadModal.addEventListener("click", (event) => {
     if (event.target === elements.downloadModal) {
       closeDownloadModal();
+    }
+  });
+  elements.syncSplashModal?.addEventListener("click", (event) => {
+    if (event.target === elements.syncSplashModal) {
+      markSyncOnboardingSeen();
+      closeSyncSplash();
     }
   });
   window.addEventListener("keydown", (event) => {
@@ -1104,6 +1200,7 @@ function attachEvents() {
     elements.cognitionGap,
     elements.nextOptions,
     elements.cueWord,
+    elements.videoUrl,
     elements.tryPlan,
     elements.reflection,
   ].forEach((input) => {
@@ -1161,6 +1258,7 @@ async function initializeApp() {
 
 async function refreshCloudState() {
   updateAuthUi();
+  maybeOpenSyncSplash();
   await loadRecords();
   renderRecords();
 

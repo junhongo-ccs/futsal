@@ -10,7 +10,7 @@
     <header class="app-header">
       <div>
         <p class="eyebrow">週末フットサル</p>
-        <h1>準備と振り返りを記録する</h1>
+        <h1>準備と振り返りを記録</h1>
       </div>
       <div class="header-actions">
         <nav class="app-nav" aria-label="画面切り替え">
@@ -22,11 +22,16 @@
     </header>
 
     <main class="layout">
+      <section class="sync-banner" id="syncBanner" hidden>
+        <p class="sync-banner-text">ログインすると、複数端末で同じ記録を確認できる。</p>
+        <button class="button primary small-banner" id="openSyncSplashButton" type="button">同期する</button>
+      </section>
+
       <section class="panel auth-panel" id="authPanel" hidden>
         <div>
           <p class="eyebrow">同期</p>
-          <h2>Googleログインで記録を同期する</h2>
-          <p class="hint" id="authStatus">ログインすると、スマホ2台やPCから同じ記録を見られます。</p>
+          <h2>Googleログインで同期</h2>
+          <p class="hint" id="authStatus">ログインすると、複数端末で同じ記録を確認できる。</p>
         </div>
         <div class="auth-actions">
           <button class="button primary" id="signInButton" type="button">Googleでログイン</button>
@@ -40,9 +45,9 @@
           <div class="section-title">
             <div>
               <p class="eyebrow">手順1</p>
-              <h2 id="score-title">準備前の身体と心を確認する</h2>
+              <h2 id="score-title">準備前の状態を確認</h2>
             </div>
-            <p class="hint">前の晩や当日の状態を0から10で記録します。グラフをクリックしても入力できます。</p>
+            <p class="hint">前日から当日の状態を0〜10で記録する。グラフ操作でも入力できる。</p>
           </div>
 
           <div class="score-grid">
@@ -73,9 +78,9 @@
           <div class="section-title">
             <div>
               <p class="eyebrow">日々の軸</p>
-              <h2 id="small-actions-title">インサイドルールを実行に移す</h2>
+              <h2 id="small-actions-title">インサイドルールを実行</h2>
             </div>
-            <p class="hint">自分との約束を1〜3個。感情の良し悪しではなく、行動できたかを見ます。</p>
+            <p class="hint">自分との約束を1〜3個記録。感情より行動の実行度を見る。</p>
           </div>
 
           <div class="small-actions">
@@ -184,9 +189,9 @@
           <div class="section-title">
             <div>
               <p class="eyebrow">準備</p>
-              <h2 id="prepare-title">ピーク状態に近づく準備をする</h2>
+              <h2 id="prepare-title">ピークへ向けて準備</h2>
             </div>
-            <p class="hint">プレー内容を決めすぎず、フットサル場へ向かう前の生活、気持ち、集中を整えます。</p>
+            <p class="hint">プレーを決めすぎず、向かう前の生活・気持ち・集中を整える。</p>
           </div>
 
           <div class="three-columns">
@@ -216,9 +221,9 @@
           <div class="section-title">
             <div>
               <p class="eyebrow">活動後</p>
-              <h2 id="after-score-title">活動後の身体と心を確認する</h2>
+              <h2 id="after-score-title">活動後の状態を確認</h2>
             </div>
-            <p class="hint">準備前との変化を、本人の主観で確認します。</p>
+            <p class="hint">準備前との変化を主観で確認する。</p>
           </div>
 
           <div class="score-grid">
@@ -253,9 +258,9 @@
           <div class="section-title">
             <div>
               <p class="eyebrow">振り返り</p>
-              <h2 id="reflection-title">サッカーノートを書く</h2>
+              <h2 id="reflection-title">サッカーノートを記録</h2>
             </div>
-            <p class="hint">状況判断能力を上げるために、結果だけでなく、認知の穴と次の選択肢まで残します。</p>
+            <p class="hint">結果だけでなく、認知の穴と次の選択肢まで残す。</p>
           </div>
 
           <div class="two-columns">
@@ -282,6 +287,10 @@
             <label>
               <span>合言葉</span>
               <textarea id="cueWord" rows="3" placeholder="例: 受ける前に見る。見る、向く、運ぶ。"></textarea>
+            </label>
+            <label>
+              <span>動画URL（任意）</span>
+              <input id="videoUrl" type="url" inputmode="url" placeholder="例: https://youtu.be/xxxxxxxxxxx" />
             </label>
             <label>
               <span>できたこと</span>
@@ -337,7 +346,7 @@
             <p class="eyebrow">Docs</p>
             <h2 id="docs-title">ドキュメント一覧</h2>
           </div>
-          <p class="hint">目的、準備、意識、体感覚などを読み返せます。</p>
+          <p class="hint">目的・準備・意識・体感覚を読み返す。</p>
         </div>
         <div id="docsList" class="docs-list"></div>
       </section>
@@ -362,6 +371,18 @@
           <button class="button primary" id="downloadMarkdownButton" type="button">MD</button>
           <button class="button secondary" id="downloadJsonButton" type="button">JSON</button>
           <button class="button secondary" id="cancelDownloadButton" type="button">キャンセル</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="syncSplashModal" hidden>
+      <section class="modal sync-splash" role="dialog" aria-modal="true" aria-labelledby="sync-splash-title">
+        <p class="eyebrow">同期</p>
+        <h2 id="sync-splash-title">Googleログインで同期</h2>
+        <p>ログインすると、スマホ2台やPCから同じ記録を見られる。</p>
+        <div class="modal-actions">
+          <button class="button primary" id="syncSplashLoginButton" type="button">Googleでログイン</button>
+          <button class="button secondary" id="syncSplashLaterButton" type="button">あとで</button>
         </div>
       </section>
     </div>
