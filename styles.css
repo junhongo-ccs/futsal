@@ -382,6 +382,11 @@ input:focus {
   border-color: var(--primary-strong);
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
 .button.secondary {
   background: #222222;
   color: var(--text);

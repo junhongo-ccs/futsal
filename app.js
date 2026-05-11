@@ -174,6 +174,16 @@ function nowDateTimeLocal() {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
+function createRecordId() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (char) =>
+    (Number(char) ^ (Math.random() * 16) >> (Number(char) / 4)).toString(16),
+  );
+}
+
 async function setupSupabase() {
   supabaseConfig = window.FUTSAL_SUPABASE || (await loadSupabaseConfig());
   isSupabaseConfigured = Boolean(supabaseConfig.url && supabaseConfig.anonKey && window.supabase?.createClient);
@@ -263,7 +273,8 @@ async function loadRecords() {
 }
 
 async function saveRecord(record) {
-  if (!isSupabaseActive()) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
     records.push(record);
     saveLocalRecords();
     return record;
@@ -273,7 +284,7 @@ async function saveRecord(record) {
     .from("futsal_records")
     .insert({
       id: record.id,
-      user_id: currentUser.id,
+      user_id: user.id,
       date_time: record.dateTime,
       data: record,
     })
@@ -302,10 +313,20 @@ function isSupabaseActive() {
   return Boolean(isSupabaseConfigured && currentUser);
 }
 
+async function getAuthenticatedUser() {
+  if (!isSupabaseConfigured || !supabaseClient) return null;
+  if (currentUser) return currentUser;
+
+  const { data, error } = await supabaseClient.auth.getSession();
+  currentUser = error ? null : data.session?.user || null;
+  updateAuthUi();
+  return currentUser;
+}
+
 function getFormData() {
   const dateTime = elements.recordDateTime.value || nowDateTimeLocal();
   return {
-    id: crypto.randomUUID(),
+    id: createRecordId(),
     dateTime,
     date: dateTime.slice(0, 10),
     courtName: elements.courtName.value,
@@ -1040,16 +1061,40 @@ function clearForm() {
 }
 
 async function saveCurrentRecord() {
-  const record = getFormData();
+  if (elements.saveButton?.disabled) return;
+
+  setSaveInProgress(true);
   try {
+    const record = getFormData();
     const saved = await saveRecord(record);
     clearForm();
     showSaveStatus("記録しました");
     renderRecords();
     navigate(`#/records/${encodeURIComponent(saved.id)}`);
-  } catch {
-    showSaveStatus("記録に失敗しました");
+  } catch (error) {
+    console.error("Failed to save record", error);
+    showSaveStatus(`記録に失敗しました: ${getErrorMessage(error)}`);
+  } finally {
+    setSaveInProgress(false);
   }
+}
+
+function setSaveInProgress(isSaving) {
+  if (!elements.saveButton) return;
+  elements.saveButton.disabled = isSaving;
+  elements.saveButton.textContent = isSaving ? "記録中..." : "記録する";
+  elements.saveButton.setAttribute("aria-busy", String(isSaving));
+  if (isSaving) {
+    showSaveStatus("記録中...");
+  }
+}
+
+function getErrorMessage(error) {
+  if (error?.message?.includes("row-level security")) {
+    return "ログイン状態を確認できませんでした。再ログインしてからもう一度記録してください";
+  }
+
+  return error?.message || "通信状態とSupabase設定を確認してください";
 }
 
 function download(filename, content, type) {
@@ -1244,8 +1289,12 @@ async function initializeApp() {
   attachEvents();
 
   if (supabaseClient) {
-    const { data, error } = await supabaseClient.auth.getUser();
-    currentUser = error ? null : data.user;
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    currentUser = sessionData.session?.user || null;
+    if (!currentUser) {
+      const { data, error } = await supabaseClient.auth.getUser();
+      currentUser = error ? null : data.user;
+    }
     supabaseClient.auth.onAuthStateChange(async (_event, session) => {
       currentUser = session?.user || null;
       await refreshCloudState();
