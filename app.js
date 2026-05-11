@@ -152,7 +152,6 @@ const elements = {
   authPanel: document.querySelector("#authPanel"),
   authStatus: document.querySelector("#authStatus"),
   signInButton: document.querySelector("#signInButton"),
-  signOutButton: document.querySelector("#signOutButton"),
   importLocalButton: document.querySelector("#importLocalButton"),
   syncBanner: document.querySelector("#syncBanner"),
   openSyncSplashButton: document.querySelector("#openSyncSplashButton"),
@@ -463,7 +462,6 @@ function updateAuthUi() {
     elements.syncBanner.hidden = true;
     elements.authStatus.textContent = `${currentUser.email || "ログイン中"} として同期しています。`;
     if (elements.signInButton) elements.signInButton.hidden = true;
-    if (elements.signOutButton) elements.signOutButton.hidden = false;
     if (elements.importLocalButton) elements.importLocalButton.hidden = localCount === 0;
     markSyncOnboardingSeen();
     return;
@@ -472,7 +470,6 @@ function updateAuthUi() {
   elements.syncBanner.hidden = false;
   elements.authStatus.textContent = "Googleログインすると、スマホ2台やPCから同じ記録を見られます。";
   if (elements.signInButton) elements.signInButton.hidden = false;
-  if (elements.signOutButton) elements.signOutButton.hidden = true;
   if (elements.importLocalButton) elements.importLocalButton.hidden = true;
 }
 
@@ -509,21 +506,6 @@ async function signInWithGoogle() {
     },
   });
   if (error) showSaveStatus("Googleログインを開始できませんでした");
-}
-
-async function signOut() {
-  if (!supabaseClient) return;
-  const { error } = await supabaseClient.auth.signOut();
-  if (error) {
-    showSaveStatus("ログアウトに失敗しました");
-    return;
-  }
-  currentUser = null;
-  records = [];
-  updateAuthUi();
-  renderRecords();
-  showSaveStatus("ログアウトしました");
-  navigate("#/new");
 }
 
 async function importLocalRecords() {
@@ -795,7 +777,9 @@ function renderRecords() {
   elements.recordCount.textContent = `${records.length}件`;
 
   if (isSupabaseConfigured && !currentUser) {
-    elements.records.innerHTML = '<p class="empty">Googleログインすると記録を同期して表示できます。</p>';
+    elements.records.innerHTML =
+      '<p class="empty">まだ記録はありません。Googleログインで同期すると、他端末の記録も表示できます。</p>' +
+      '<button class="button primary" id="loginFromRecordsButton" type="button">Googleでログイン</button>';
     return;
   }
 
@@ -1147,7 +1131,6 @@ function attachEvents() {
   elements.saveButton.addEventListener("click", saveCurrentRecord);
   elements.clearButton.addEventListener("click", clearForm);
   elements.signInButton.addEventListener("click", signInWithGoogle);
-  elements.signOutButton.addEventListener("click", signOut);
   elements.importLocalButton.addEventListener("click", importLocalRecords);
   elements.openSyncSplashButton?.addEventListener("click", openSyncSplash);
   elements.syncSplashLoginButton?.addEventListener("click", signInWithGoogle);
@@ -1176,15 +1159,6 @@ function attachEvents() {
     }
   });
   window.addEventListener("hashchange", handleRoute);
-
-  document.querySelectorAll(".quick-actions button").forEach((button) => {
-    button.addEventListener("click", () => {
-      const target = document.querySelector(`#${button.dataset.target}`);
-      target.value = button.dataset.text;
-      target.focus();
-      scheduleDraftSave();
-    });
-  });
 
   [
     elements.bodyScore,
@@ -1219,6 +1193,11 @@ function attachEvents() {
   });
 
   elements.records.addEventListener("click", async (event) => {
+    if (event.target.closest("#loginFromRecordsButton")) {
+      await signInWithGoogle();
+      return;
+    }
+
     const detailId = event.target.dataset.detail;
     const deleteId = event.target.dataset.delete;
 
