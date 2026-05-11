@@ -740,7 +740,7 @@ function showView(name) {
 }
 
 function handleRoute() {
-  const hash = window.location.hash || "#/new";
+  const hash = window.location.hash || "#/docs";
   const detailMatch = hash.match(/^#\/records\/(.+)$/);
   const docsDetailMatch = hash.match(/^#\/docs\/(.+)$/);
 
