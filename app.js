@@ -1122,27 +1122,27 @@ function attachEvents() {
   elements.afterCanvas.addEventListener("pointerdown", (event) =>
     handleCanvasPoint(event, elements.afterCanvas, elements.afterBodyScore, elements.afterMindScore),
   );
-  elements.newRecordNav.addEventListener("click", () => navigate("#/new"));
-  elements.recordsNav.addEventListener("click", () => navigate("#/records"));
-  elements.docsNav.addEventListener("click", () => navigate("#/docs"));
-  elements.backToRecordsButton.addEventListener("click", () => navigate("#/records"));
-  elements.backToDocsButton.addEventListener("click", () => navigate("#/docs"));
-  elements.saveDraftButton.addEventListener("click", () => saveDraft(true));
-  elements.saveButton.addEventListener("click", saveCurrentRecord);
-  elements.clearButton.addEventListener("click", clearForm);
-  elements.signInButton.addEventListener("click", signInWithGoogle);
-  elements.importLocalButton.addEventListener("click", importLocalRecords);
+  elements.newRecordNav?.addEventListener("click", () => navigate("#/new"));
+  elements.recordsNav?.addEventListener("click", () => navigate("#/records"));
+  elements.docsNav?.addEventListener("click", () => navigate("#/docs"));
+  elements.backToRecordsButton?.addEventListener("click", () => navigate("#/records"));
+  elements.backToDocsButton?.addEventListener("click", () => navigate("#/docs"));
+  elements.saveDraftButton?.addEventListener("click", () => saveDraft(true));
+  elements.saveButton?.addEventListener("click", saveCurrentRecord);
+  elements.clearButton?.addEventListener("click", clearForm);
+  elements.signInButton?.addEventListener("click", signInWithGoogle);
+  elements.importLocalButton?.addEventListener("click", importLocalRecords);
   elements.openSyncSplashButton?.addEventListener("click", openSyncSplash);
   elements.syncSplashLoginButton?.addEventListener("click", signInWithGoogle);
   elements.syncSplashLaterButton?.addEventListener("click", () => {
     markSyncOnboardingSeen();
     closeSyncSplash();
   });
-  elements.downloadButton.addEventListener("click", openDownloadModal);
-  elements.downloadJsonButton.addEventListener("click", exportJson);
-  elements.downloadMarkdownButton.addEventListener("click", exportMarkdown);
-  elements.cancelDownloadButton.addEventListener("click", closeDownloadModal);
-  elements.downloadModal.addEventListener("click", (event) => {
+  elements.downloadButton?.addEventListener("click", openDownloadModal);
+  elements.downloadJsonButton?.addEventListener("click", exportJson);
+  elements.downloadMarkdownButton?.addEventListener("click", exportMarkdown);
+  elements.cancelDownloadButton?.addEventListener("click", closeDownloadModal);
+  elements.downloadModal?.addEventListener("click", (event) => {
     if (event.target === elements.downloadModal) {
       closeDownloadModal();
     }
@@ -1192,7 +1192,7 @@ function attachEvents() {
     input.addEventListener("change", scheduleDraftSave);
   });
 
-  elements.records.addEventListener("click", async (event) => {
+  elements.records?.addEventListener("click", async (event) => {
     if (event.target.closest("#loginFromRecordsButton")) {
       await signInWithGoogle();
       return;
@@ -1216,7 +1216,7 @@ function attachEvents() {
     }
   });
 
-  elements.docsList.addEventListener("click", (event) => {
+  elements.docsList?.addEventListener("click", (event) => {
     const card = event.target.closest("[data-doc]");
     const slug = card?.dataset.doc;
     if (!slug) return;
