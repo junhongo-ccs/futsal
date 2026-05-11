@@ -496,16 +496,30 @@ function maybeOpenSyncSplash() {
   openSyncSplash();
 }
 
+function getAuthRedirectUrl() {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  url.pathname = url.pathname.replace(/index\.html$/, "");
+  if (!url.pathname.endsWith("/")) {
+    url.pathname = `${url.pathname}/`;
+  }
+  return url.toString();
+}
+
 async function signInWithGoogle() {
   if (!supabaseClient) return;
   markSyncOnboardingSeen();
+  const redirectTo = getAuthRedirectUrl();
   const { error } = await supabaseClient.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: window.location.origin + window.location.pathname,
+      redirectTo,
     },
   });
-  if (error) showSaveStatus("Googleログインを開始できませんでした");
+  if (error) {
+    showSaveStatus(`Googleログインを開始できませんでした: ${error.message || "設定を確認してください"}`);
+  }
 }
 
 async function importLocalRecords() {
