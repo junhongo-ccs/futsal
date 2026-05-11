@@ -23,8 +23,8 @@
 
     <main class="layout">
       <section class="sync-banner" id="syncBanner" hidden>
-        <p class="sync-banner-text">ログインすると、複数端末で同じ記録を確認できる。</p>
-        <button class="button primary small-banner" id="openSyncSplashButton" type="button">同期する</button>
+        <p class="sync-banner-text">Googleログインすると、複数端末で同じ記録を確認できる。</p>
+        <button class="button primary small-banner" id="openSyncSplashButton" type="button">Googleログインで同期</button>
       </section>
 
       <section class="panel auth-panel" id="authPanel" hidden>
@@ -47,7 +47,10 @@
               <p class="eyebrow">手順1</p>
               <h2 id="score-title">準備前の状態を確認</h2>
             </div>
-            <p class="hint">前日から当日の状態を0〜10で記録する。グラフ操作でも入力できる。</p>
+            <p class="hint">
+              <span class="desktop-only">前日から当日の状態を0〜10で記録する。グラフ操作でも入力できる。</span>
+              <span class="mobile-only">前日から当日の状態を0〜10で記録する。スライダーで入力する。</span>
+            </p>
           </div>
 
           <div class="score-grid">
@@ -223,7 +226,10 @@
               <p class="eyebrow">活動後</p>
               <h2 id="after-score-title">活動後の状態を確認</h2>
             </div>
-            <p class="hint">準備前との変化を主観で確認する。</p>
+            <p class="hint">
+              <span class="desktop-only">準備前との変化を主観で確認する。</span>
+              <span class="mobile-only">準備前との変化をスライダー入力で確認する。</span>
+            </p>
           </div>
 
           <div class="score-grid">
