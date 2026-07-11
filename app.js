@@ -77,7 +77,7 @@ const docs = [
     slug: "app-implementation-plan",
     title: "Webアプリ実装計画",
     path: "generated-docs/app-implementation-plan.html",
-    summary: "準備フェーズ、サッカーノート、DBと認証の実装方針。",
+    summary: "準備フェーズ、フットサルノート、DBと認証の実装方針。",
     tags: ["アプリ"],
   },
   {

@@ -2,7 +2,7 @@
 
 この場所は、趣味のフットサルを続けていく中で、自分の目的を確認し、振り返り、また立ち戻るための場所です。
 
-記録用の簡単なWebアプリは [index.html](index.html) にある。ブラウザで開くと、準備前と活動後の身体と心を0から10で記録し、ピーク状態に近づく準備と活動後のサッカーノートを保存できる。
+記録用の簡単なWebアプリは [index.html](index.html) にある。ブラウザで開くと、準備前と活動後の身体と心を0から10で記録し、ピーク状態に近づく準備と活動後のフットサルノートを保存できる。
 
 記録日時は年月日時分まで残せる。同じ日に複数回記録する場合も、タイミングを分けて振り返れる。
 
@@ -109,7 +109,7 @@ Webアプリは、記録入力、記録一覧、記録詳細、Docs一覧、Docs
 
 入力途中の内容は「途中保存」で下書き保存できる。入力中も自動で下書き保存され、同じブラウザで開き直すと復元される。「記録する」を押すと履歴に確定保存され、下書きは消える。
 
-Webアプリは、前の晩や当日の準備フェーズと、活動後のサッカーノートとしての振り返りフェーズを1セットで扱う。複数端末から同じ記録へアクセスできるよう、Supabaseとメール・パスワード認証による同期にも対応している。実装方針は [docs/app-implementation-plan.md](docs/app-implementation-plan.md)、設定手順は [docs/supabase-setup.md](docs/supabase-setup.md) に残している。
+Webアプリは、前の晩や当日の準備フェーズと、活動後のフットサルノートとしての振り返りフェーズを1セットで扱う。複数端末から同じ記録へアクセスできるよう、Supabaseとメール・パスワード認証による同期にも対応している。実装方針は [docs/app-implementation-plan.md](docs/app-implementation-plan.md)、設定手順は [docs/supabase-setup.md](docs/supabase-setup.md) に残している。
 
 目的そのものは [docs/purpose.md](docs/purpose.md)、考え方は [docs/thinking.md](docs/thinking.md)、本番前の準備力は [docs/preparation.md](docs/preparation.md)、意識系の理解は [docs/awareness.md](docs/awareness.md)、体感覚への落とし込みは [docs/body-sense.md](docs/body-sense.md)、メンタルの整え方は [docs/mental-control.md](docs/mental-control.md)、狭いコートでのプレッシャー対処は [docs/pressure-control.md](docs/pressure-control.md)、日常の小さなプレッシャー訓練は [docs/daily-pressure-training.md](docs/daily-pressure-training.md) に分けている。
 
