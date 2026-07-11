@@ -149,6 +149,7 @@ const elements = {
   recordDetail: document.querySelector("#recordDetail"),
   docsList: document.querySelector("#docsList"),
   docsDetail: document.querySelector("#docsDetail"),
+  docsPager: document.querySelector("#docsPager"),
   authPanel: document.querySelector("#authPanel"),
   authStatus: document.querySelector("#authStatus"),
   signInButton: document.querySelector("#signInButton"),
@@ -1076,14 +1077,47 @@ function renderDocTags(tags = []) {
   return `<div class="doc-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>`;
 }
 
+function renderDocsPager(slug) {
+  if (!elements.docsPager) return;
+  const index = docs.findIndex((item) => item.slug === slug);
+  if (index === -1) {
+    elements.docsPager.innerHTML = "";
+    return;
+  }
+
+  const prev = docs[index - 1];
+  const next = docs[index + 1];
+
+  const prevHtml = prev
+    ? `
+      <button class="docs-pager-link docs-pager-prev" type="button" data-doc="${prev.slug}">
+        <span class="docs-pager-arrow">＜</span>
+        <span class="docs-pager-text"><small>前の読み物</small><strong>${escapeHtml(prev.title)}</strong></span>
+      </button>
+    `
+    : "";
+  const nextHtml = next
+    ? `
+      <button class="docs-pager-link docs-pager-next" type="button" data-doc="${next.slug}">
+        <span class="docs-pager-text"><small>次の読み物</small><strong>${escapeHtml(next.title)}</strong></span>
+        <span class="docs-pager-arrow">＞</span>
+      </button>
+    `
+    : "";
+
+  elements.docsPager.innerHTML = prevHtml + nextHtml;
+}
+
 async function renderDocsDetail(slug) {
   const doc = docs.find((item) => item.slug === slug);
   if (!doc) {
     elements.docsDetail.innerHTML = '<p class="empty">ドキュメントが見つかりません。</p>';
+    if (elements.docsPager) elements.docsPager.innerHTML = "";
     return;
   }
 
   elements.docsDetail.innerHTML = '<p class="empty">読み込み中...</p>';
+  renderDocsPager(slug);
 
   try {
     const response = await fetch(doc.path);
@@ -1393,6 +1427,14 @@ function attachEvents() {
     const slug = card?.dataset.doc;
     if (!slug) return;
     navigate(`#/docs/${encodeURIComponent(slug)}`);
+  });
+
+  elements.docsPager?.addEventListener("click", (event) => {
+    const link = event.target.closest("[data-doc]");
+    const slug = link?.dataset.doc;
+    if (!slug) return;
+    navigate(`#/docs/${encodeURIComponent(slug)}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   });
 }
 

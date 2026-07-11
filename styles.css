@@ -481,6 +481,66 @@ input:focus {
   gap: 12px;
 }
 
+.docs-pager {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.docs-pager-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #171717;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  padding: 12px 14px;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.docs-pager-link:hover,
+.docs-pager-link:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.docs-pager-next {
+  margin-left: auto;
+  text-align: right;
+}
+
+.docs-pager-arrow {
+  font-size: 20px;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.docs-pager-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.docs-pager-text small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.docs-pager-text strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .record-header {
   display: flex;
   align-items: center;
@@ -771,6 +831,19 @@ input:focus {
   .doc-card,
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .docs-pager {
+    flex-direction: column;
+  }
+
+  .docs-pager-link {
+    max-width: none;
+  }
+
+  .docs-pager-next {
+    margin-left: 0;
+    text-align: left;
   }
 
   .chart-wrap {
