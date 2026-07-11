@@ -164,6 +164,12 @@ const elements = {
   authSignInButton: document.querySelector("#authSignInButton"),
   authSignUpButton: document.querySelector("#authSignUpButton"),
   syncSplashLaterButton: document.querySelector("#syncSplashLaterButton"),
+  setPasswordButton: document.querySelector("#setPasswordButton"),
+  setPasswordModal: document.querySelector("#setPasswordModal"),
+  setPasswordForm: document.querySelector("#setPasswordForm"),
+  newPassword: document.querySelector("#newPassword"),
+  setPasswordStatus: document.querySelector("#setPasswordStatus"),
+  cancelSetPasswordButton: document.querySelector("#cancelSetPasswordButton"),
 };
 
 const ctx = elements.canvas.getContext("2d");
@@ -479,6 +485,7 @@ function updateAuthUi() {
   if (!isSupabaseConfigured) {
     if (elements.syncBanner) elements.syncBanner.hidden = true;
     if (elements.syncSplashModal) elements.syncSplashModal.hidden = true;
+    if (elements.setPasswordButton) elements.setPasswordButton.hidden = true;
     return;
   }
 
@@ -490,11 +497,13 @@ function updateAuthUi() {
     elements.authStatus.textContent = `${currentUser.email || "ログイン中"} として同期しています。`;
     if (elements.signOutButton) elements.signOutButton.hidden = false;
     if (elements.importLocalButton) elements.importLocalButton.hidden = localCount === 0;
+    if (elements.setPasswordButton) elements.setPasswordButton.hidden = false;
     markSyncOnboardingSeen();
     closeSyncSplash();
     return;
   }
 
+  if (elements.setPasswordButton) elements.setPasswordButton.hidden = true;
   elements.syncBanner.hidden = false;
   elements.authStatus.textContent = "メールでログインすると、スマホ2台やPCから同じ記録を見られます。";
   if (elements.signOutButton) elements.signOutButton.hidden = true;
@@ -597,6 +606,37 @@ async function signOutOfEmail() {
   if (error) {
     showSaveStatus(`ログアウトに失敗しました: ${error.message || ""}`);
   }
+}
+
+function openSetPasswordModal() {
+  if (!elements.setPasswordModal) return;
+  elements.setPasswordModal.hidden = false;
+}
+
+function closeSetPasswordModal() {
+  if (!elements.setPasswordModal) return;
+  elements.setPasswordModal.hidden = true;
+  if (elements.setPasswordStatus) elements.setPasswordStatus.textContent = "";
+  if (elements.newPassword) elements.newPassword.value = "";
+}
+
+async function setNewPassword() {
+  if (!supabaseClient) return;
+  const password = elements.newPassword?.value || "";
+  if (password.length < 6) {
+    if (elements.setPasswordStatus) elements.setPasswordStatus.textContent = "パスワードは6文字以上にしてください。";
+    return;
+  }
+  if (elements.setPasswordStatus) elements.setPasswordStatus.textContent = "設定中...";
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  if (error) {
+    if (elements.setPasswordStatus) {
+      elements.setPasswordStatus.textContent = `設定できませんでした: ${error.message || "内容を確認してください"}`;
+    }
+    return;
+  }
+  closeSetPasswordModal();
+  showSaveStatus("パスワードを設定しました");
 }
 
 async function importLocalRecords() {
@@ -1274,6 +1314,17 @@ function attachEvents() {
       closeSyncSplash();
     }
   });
+  elements.setPasswordButton?.addEventListener("click", openSetPasswordModal);
+  elements.cancelSetPasswordButton?.addEventListener("click", closeSetPasswordModal);
+  elements.setPasswordForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    setNewPassword();
+  });
+  elements.setPasswordModal?.addEventListener("click", (event) => {
+    if (event.target === elements.setPasswordModal) {
+      closeSetPasswordModal();
+    }
+  });
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !elements.downloadModal.hidden) {
       closeDownloadModal();
@@ -1357,9 +1408,12 @@ async function initializeApp() {
       const { data, error } = await supabaseClient.auth.getUser();
       currentUser = error ? null : data.user;
     }
-    supabaseClient.auth.onAuthStateChange(async (_event, session) => {
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
       currentUser = session?.user || null;
       await refreshCloudState();
+      if (event === "PASSWORD_RECOVERY") {
+        openSetPasswordModal();
+      }
     });
   }
 

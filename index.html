@@ -18,6 +18,7 @@
           <button class="nav-button" id="newRecordNav" type="button">準備と記録</button>
           <button class="nav-button" id="recordsNav" type="button">記録一覧</button>
         </nav>
+        <button class="button secondary" id="setPasswordButton" type="button" hidden>パスワードを設定</button>
       </div>
     </header>
 
@@ -403,6 +404,24 @@
             <button class="button primary" id="authSignInButton" type="submit">ログイン</button>
             <button class="button secondary" id="authSignUpButton" type="button">新規登録</button>
             <button class="button secondary" id="syncSplashLaterButton" type="button">あとで</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="modal-backdrop" id="setPasswordModal" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="set-password-title">
+        <h2 id="set-password-title">パスワードを設定</h2>
+        <p>次回からメールアドレスとこのパスワードでログインできるようになる。</p>
+        <form class="auth-form" id="setPasswordForm">
+          <label>
+            <span>新しいパスワード</span>
+            <input id="newPassword" type="password" autocomplete="new-password" placeholder="6文字以上" />
+          </label>
+          <p class="hint" id="setPasswordStatus" aria-live="polite"></p>
+          <div class="modal-actions">
+            <button class="button primary" id="setPasswordSubmitButton" type="submit">設定する</button>
+            <button class="button secondary" id="cancelSetPasswordButton" type="button">キャンセル</button>
           </div>
         </form>
       </section>

@@ -643,6 +643,10 @@ input:focus {
   gap: 10px;
 }
 
+#setPasswordModal .modal-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
 .markdown-body {
   max-width: 820px;
 }
