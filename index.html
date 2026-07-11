@@ -25,6 +25,7 @@
           <button class="nav-button" id="docsNav" type="button">学び</button>
           <button class="nav-button" id="newRecordNav" type="button">準備と記録</button>
           <button class="nav-button" id="recordsNav" type="button">記録一覧</button>
+          <button class="nav-button" id="userNav" type="button" hidden>ユーザー</button>
         </nav>
       </div>
     </header>
@@ -33,19 +34,6 @@
       <section class="sync-banner" id="syncBanner" hidden>
         <p class="sync-banner-text">メールでログインすると、複数端末で同じ記録を確認できる。</p>
         <button class="button primary small-banner" id="openSyncSplashButton" type="button">メールでログイン</button>
-      </section>
-
-      <section class="panel auth-panel" id="authPanel" hidden>
-        <div>
-          <p class="eyebrow">同期</p>
-          <h2>メールで同期</h2>
-          <p class="hint" id="authStatus">ログインすると、複数端末で同じ記録を確認できる。</p>
-        </div>
-        <div class="auth-actions">
-          <button class="button primary" id="signInButton" type="button">メールでログイン</button>
-          <button class="button secondary" id="importLocalButton" type="button" hidden>この端末の記録を取り込む</button>
-          <button class="button secondary" id="signOutButton" type="button" hidden aria-hidden="true">ログアウト</button>
-        </div>
       </section>
 
       <div class="view" id="formView">
@@ -379,6 +367,53 @@
         <article id="docsDetail" class="markdown-body"></article>
         <nav class="docs-pager" id="docsPager" aria-label="前後の読み物"></nav>
       </section>
+
+      <section class="view panel user-panel" id="userView" aria-labelledby="user-title" hidden>
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">アカウント</p>
+            <h2 id="user-title">ユーザー設定</h2>
+          </div>
+        </div>
+
+        <div id="userLoggedOut" class="user-fields" hidden>
+          <p class="hint">ログインすると、ユーザー名の設定やパスワード変更ができます。</p>
+          <div class="auth-actions">
+            <button class="button primary" id="userLoginButton" type="button">メールでログイン</button>
+          </div>
+        </div>
+
+        <div id="userLoggedIn" class="user-fields" hidden>
+          <p class="hint">メールアドレス: <strong id="userEmailLabel"></strong></p>
+
+          <form id="usernameForm" class="auth-form">
+            <label>
+              <span>ユーザー名</span>
+              <input id="usernameInput" type="text" maxlength="30" placeholder="例: じゅん" />
+            </label>
+            <p class="hint" id="usernameStatus" aria-live="polite"></p>
+            <div class="auth-actions">
+              <button class="button primary" id="usernameSaveButton" type="submit">ユーザー名を保存</button>
+            </div>
+          </form>
+
+          <form id="changePasswordForm" class="auth-form">
+            <label>
+              <span>新しいパスワード</span>
+              <input id="changePasswordInput" type="password" autocomplete="new-password" placeholder="6文字以上" />
+            </label>
+            <p class="hint" id="changePasswordStatus" aria-live="polite"></p>
+            <div class="auth-actions">
+              <button class="button primary" id="changePasswordButton" type="submit">パスワードを変更</button>
+            </div>
+          </form>
+
+          <div class="auth-actions">
+            <button class="button secondary" id="importLocalButton" type="button" hidden>この端末の記録を取り込む</button>
+            <button class="button secondary" id="userSignOutButton" type="button">ログアウト</button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <div class="modal-backdrop" id="downloadModal" hidden>
@@ -436,6 +471,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=20260712-4"></script>
+    <script src="app.js?v=20260712-5"></script>
   </body>
 </html>

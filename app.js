@@ -102,9 +102,11 @@ const elements = {
   detailView: document.querySelector("#detailView"),
   docsView: document.querySelector("#docsView"),
   docsDetailView: document.querySelector("#docsDetailView"),
+  userView: document.querySelector("#userView"),
   newRecordNav: document.querySelector("#newRecordNav"),
   recordsNav: document.querySelector("#recordsNav"),
   docsNav: document.querySelector("#docsNav"),
+  userNav: document.querySelector("#userNav"),
   backToRecordsButton: document.querySelector("#backToRecordsButton"),
   backToDocsButton: document.querySelector("#backToDocsButton"),
   canvas: document.querySelector("#stateChart"),
@@ -150,10 +152,17 @@ const elements = {
   docsList: document.querySelector("#docsList"),
   docsDetail: document.querySelector("#docsDetail"),
   docsPager: document.querySelector("#docsPager"),
-  authPanel: document.querySelector("#authPanel"),
-  authStatus: document.querySelector("#authStatus"),
-  signInButton: document.querySelector("#signInButton"),
-  signOutButton: document.querySelector("#signOutButton"),
+  userLoggedOut: document.querySelector("#userLoggedOut"),
+  userLoggedIn: document.querySelector("#userLoggedIn"),
+  userEmailLabel: document.querySelector("#userEmailLabel"),
+  userLoginButton: document.querySelector("#userLoginButton"),
+  usernameForm: document.querySelector("#usernameForm"),
+  usernameInput: document.querySelector("#usernameInput"),
+  usernameStatus: document.querySelector("#usernameStatus"),
+  changePasswordForm: document.querySelector("#changePasswordForm"),
+  changePasswordInput: document.querySelector("#changePasswordInput"),
+  changePasswordStatus: document.querySelector("#changePasswordStatus"),
+  userSignOutButton: document.querySelector("#userSignOutButton"),
   importLocalButton: document.querySelector("#importLocalButton"),
   syncBanner: document.querySelector("#syncBanner"),
   openSyncSplashButton: document.querySelector("#openSyncSplashButton"),
@@ -479,8 +488,12 @@ function showSaveStatus(message) {
 }
 
 function updateAuthUi() {
-  if (!elements.authPanel) return;
-  elements.authPanel.hidden = true;
+  if (elements.userNav) {
+    elements.userNav.hidden = !isSupabaseConfigured;
+    elements.userNav.textContent = currentUser
+      ? currentUser.user_metadata?.username || currentUser.email || "ユーザー"
+      : "ユーザー";
+  }
 
   if (!isSupabaseConfigured) {
     if (elements.syncBanner) elements.syncBanner.hidden = true;
@@ -489,22 +502,15 @@ function updateAuthUi() {
   }
 
   if (!elements.syncBanner) return;
-  const localCount = loadLocalRecords().length;
 
   if (currentUser) {
     elements.syncBanner.hidden = true;
-    elements.authStatus.textContent = `${currentUser.email || "ログイン中"} として同期しています。`;
-    if (elements.signOutButton) elements.signOutButton.hidden = false;
-    if (elements.importLocalButton) elements.importLocalButton.hidden = localCount === 0;
     markSyncOnboardingSeen();
     closeSyncSplash();
     return;
   }
 
   elements.syncBanner.hidden = false;
-  elements.authStatus.textContent = "メールでログインすると、スマホ2台やPCから同じ記録を見られます。";
-  if (elements.signOutButton) elements.signOutButton.hidden = true;
-  if (elements.importLocalButton) elements.importLocalButton.hidden = true;
 }
 
 function hasSeenSyncOnboarding() {
@@ -617,23 +623,70 @@ function closeSetPasswordModal() {
   if (elements.newPassword) elements.newPassword.value = "";
 }
 
-async function setNewPassword() {
-  if (!supabaseClient) return;
-  const password = elements.newPassword?.value || "";
+async function updatePassword(password, statusEl) {
+  if (!supabaseClient) return false;
   if (password.length < 6) {
-    if (elements.setPasswordStatus) elements.setPasswordStatus.textContent = "パスワードは6文字以上にしてください。";
-    return;
+    if (statusEl) statusEl.textContent = "パスワードは6文字以上にしてください。";
+    return false;
   }
-  if (elements.setPasswordStatus) elements.setPasswordStatus.textContent = "設定中...";
+  if (statusEl) statusEl.textContent = "設定中...";
   const { error } = await supabaseClient.auth.updateUser({ password });
   if (error) {
-    if (elements.setPasswordStatus) {
-      elements.setPasswordStatus.textContent = `設定できませんでした: ${error.message || "内容を確認してください"}`;
+    if (statusEl) statusEl.textContent = `設定できませんでした: ${error.message || "内容を確認してください"}`;
+    return false;
+  }
+  if (statusEl) statusEl.textContent = "";
+  return true;
+}
+
+async function setNewPassword() {
+  const password = elements.newPassword?.value || "";
+  const ok = await updatePassword(password, elements.setPasswordStatus);
+  if (!ok) return;
+  closeSetPasswordModal();
+  showSaveStatus("パスワードを設定しました");
+}
+
+async function changePassword() {
+  const password = elements.changePasswordInput?.value || "";
+  const ok = await updatePassword(password, elements.changePasswordStatus);
+  if (!ok) return;
+  if (elements.changePasswordInput) elements.changePasswordInput.value = "";
+  if (elements.changePasswordStatus) elements.changePasswordStatus.textContent = "パスワードを変更しました。";
+}
+
+async function saveUsername() {
+  if (!supabaseClient || !currentUser) return;
+  const username = elements.usernameInput?.value.trim() || "";
+  if (!username) {
+    if (elements.usernameStatus) elements.usernameStatus.textContent = "ユーザー名を入力してください。";
+    return;
+  }
+  if (elements.usernameStatus) elements.usernameStatus.textContent = "保存中...";
+  const { data, error } = await supabaseClient.auth.updateUser({ data: { username } });
+  if (error) {
+    if (elements.usernameStatus) {
+      elements.usernameStatus.textContent = `保存できませんでした: ${error.message || ""}`;
     }
     return;
   }
-  closeSetPasswordModal();
-  showSaveStatus("パスワードを設定しました");
+  currentUser = data.user;
+  if (elements.usernameStatus) elements.usernameStatus.textContent = "保存しました。";
+  updateAuthUi();
+}
+
+function renderUserView() {
+  if (!elements.userView) return;
+  const loggedIn = isSupabaseConfigured && Boolean(currentUser);
+  if (elements.userLoggedOut) elements.userLoggedOut.hidden = loggedIn;
+  if (elements.userLoggedIn) elements.userLoggedIn.hidden = !loggedIn;
+  if (!loggedIn) return;
+
+  if (elements.userEmailLabel) elements.userEmailLabel.textContent = currentUser.email || "";
+  if (elements.usernameInput) elements.usernameInput.value = currentUser.user_metadata?.username || "";
+  if (elements.importLocalButton) {
+    elements.importLocalButton.hidden = loadLocalRecords().length === 0;
+  }
 }
 
 async function importLocalRecords() {
@@ -862,9 +915,11 @@ function showView(name) {
   elements.detailView.hidden = name !== "detail";
   elements.docsView.hidden = name !== "docs";
   elements.docsDetailView.hidden = name !== "docsDetail";
+  if (elements.userView) elements.userView.hidden = name !== "user";
   elements.newRecordNav.classList.toggle("active", name === "form");
   elements.recordsNav.classList.toggle("active", name === "records" || name === "detail");
   elements.docsNav.classList.toggle("active", name === "docs" || name === "docsDetail");
+  elements.userNav?.classList.toggle("active", name === "user");
 }
 
 function handleRoute() {
@@ -881,6 +936,12 @@ function handleRoute() {
   if (docsDetailMatch) {
     renderDocsDetail(decodeURIComponent(docsDetailMatch[1]));
     showView("docsDetail");
+    return;
+  }
+
+  if (hash === "#/user") {
+    renderUserView();
+    showView("user");
     return;
   }
 
@@ -1311,15 +1372,24 @@ function attachEvents() {
   elements.newRecordNav?.addEventListener("click", () => navigate("#/new"));
   elements.recordsNav?.addEventListener("click", () => navigate("#/records"));
   elements.docsNav?.addEventListener("click", () => navigate("#/docs"));
+  elements.userNav?.addEventListener("click", () => navigate("#/user"));
   elements.backToRecordsButton?.addEventListener("click", () => navigate("#/records"));
   elements.backToDocsButton?.addEventListener("click", () => navigate("#/docs"));
   elements.saveDraftButton?.addEventListener("click", () => saveDraft(true));
   elements.saveButton?.addEventListener("click", saveCurrentRecord);
   elements.clearButton?.addEventListener("click", clearForm);
-  elements.signInButton?.addEventListener("click", openSyncSplash);
-  elements.signOutButton?.addEventListener("click", signOutOfEmail);
   elements.importLocalButton?.addEventListener("click", importLocalRecords);
   elements.openSyncSplashButton?.addEventListener("click", openSyncSplash);
+  elements.userLoginButton?.addEventListener("click", openSyncSplash);
+  elements.userSignOutButton?.addEventListener("click", signOutOfEmail);
+  elements.usernameForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveUsername();
+  });
+  elements.changePasswordForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    changePassword();
+  });
   elements.authForm?.addEventListener("submit", (event) => {
     event.preventDefault();
     signInWithEmail();

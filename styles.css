@@ -487,6 +487,17 @@ input:focus {
   margin-top: 18px;
 }
 
+.user-fields {
+  display: grid;
+  gap: 24px;
+}
+
+.user-fields .auth-form {
+  margin-top: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
 .docs-pager-link {
   display: flex;
   align-items: center;
@@ -803,7 +814,7 @@ input:focus {
 
   .app-nav {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   }
 
   .layout {
