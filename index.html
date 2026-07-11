@@ -23,18 +23,18 @@
 
     <main class="layout">
       <section class="sync-banner" id="syncBanner" hidden>
-        <p class="sync-banner-text">Googleログインすると、複数端末で同じ記録を確認できる。</p>
-        <button class="button primary small-banner" id="openSyncSplashButton" type="button">Googleログインで同期</button>
+        <p class="sync-banner-text">メールでログインすると、複数端末で同じ記録を確認できる。</p>
+        <button class="button primary small-banner" id="openSyncSplashButton" type="button">メールでログイン</button>
       </section>
 
       <section class="panel auth-panel" id="authPanel" hidden>
         <div>
           <p class="eyebrow">同期</p>
-          <h2>Googleログインで同期</h2>
+          <h2>メールで同期</h2>
           <p class="hint" id="authStatus">ログインすると、複数端末で同じ記録を確認できる。</p>
         </div>
         <div class="auth-actions">
-          <button class="button primary" id="signInButton" type="button">Googleでログイン</button>
+          <button class="button primary" id="signInButton" type="button">メールでログイン</button>
           <button class="button secondary" id="importLocalButton" type="button" hidden>この端末の記録を取り込む</button>
           <button class="button secondary" id="signOutButton" type="button" hidden aria-hidden="true">ログアウト</button>
         </div>
@@ -387,16 +387,28 @@
     <div class="modal-backdrop" id="syncSplashModal" hidden>
       <section class="modal sync-splash" role="dialog" aria-modal="true" aria-labelledby="sync-splash-title">
         <p class="eyebrow">同期</p>
-        <h2 id="sync-splash-title">Googleログインで同期</h2>
+        <h2 id="sync-splash-title">メールで同期</h2>
         <p>ログインすると、スマホ2台やPCから同じ記録を見られる。</p>
-        <div class="modal-actions">
-          <button class="button primary" id="syncSplashLoginButton" type="button">Googleでログイン</button>
-          <button class="button secondary" id="syncSplashLaterButton" type="button">あとで</button>
-        </div>
+        <form class="auth-form" id="authForm">
+          <label>
+            <span>メールアドレス</span>
+            <input id="authEmail" type="email" autocomplete="email" placeholder="例: you@example.com" />
+          </label>
+          <label>
+            <span>パスワード</span>
+            <input id="authPassword" type="password" autocomplete="current-password" placeholder="6文字以上" />
+          </label>
+          <p class="hint" id="authFormStatus" aria-live="polite"></p>
+          <div class="modal-actions">
+            <button class="button primary" id="authSignInButton" type="submit">ログイン</button>
+            <button class="button secondary" id="authSignUpButton" type="button">新規登録</button>
+            <button class="button secondary" id="syncSplashLaterButton" type="button">あとで</button>
+          </div>
+        </form>
       </section>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=20260511-1"></script>
+    <script src="app.js?v=20260712-1"></script>
   </body>
 </html>

@@ -98,6 +98,7 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
+  flex-wrap: wrap;
 }
 
 .auth-panel[hidden] {
@@ -107,6 +108,12 @@ textarea {
 .auth-panel h2 {
   margin: 0 0 6px;
   font-size: 21px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .app-nav {
@@ -266,6 +273,8 @@ input[type="date"],
 input[type="datetime-local"],
 input[type="text"],
 input[type="url"],
+input[type="email"],
+input[type="password"],
 select {
   width: 100%;
   border: 1px solid var(--line);
@@ -632,10 +641,6 @@ input:focus {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-}
-
-.sync-splash .modal-actions {
-  grid-template-columns: 1fr 1fr;
 }
 
 .markdown-body {

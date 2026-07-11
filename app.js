@@ -84,7 +84,7 @@ const docs = [
     slug: "supabase-setup",
     title: "Supabase同期セットアップ",
     path: "generated-docs/supabase-setup.html",
-    summary: "Googleログイン、PostgreSQL、RLSで複数端末同期を有効にする手順。",
+    summary: "メール・パスワードログイン、PostgreSQL、RLSで複数端末同期を有効にする手順。",
     tags: ["アプリ"],
   },
   {
@@ -152,11 +152,17 @@ const elements = {
   authPanel: document.querySelector("#authPanel"),
   authStatus: document.querySelector("#authStatus"),
   signInButton: document.querySelector("#signInButton"),
+  signOutButton: document.querySelector("#signOutButton"),
   importLocalButton: document.querySelector("#importLocalButton"),
   syncBanner: document.querySelector("#syncBanner"),
   openSyncSplashButton: document.querySelector("#openSyncSplashButton"),
   syncSplashModal: document.querySelector("#syncSplashModal"),
-  syncSplashLoginButton: document.querySelector("#syncSplashLoginButton"),
+  authForm: document.querySelector("#authForm"),
+  authEmail: document.querySelector("#authEmail"),
+  authPassword: document.querySelector("#authPassword"),
+  authFormStatus: document.querySelector("#authFormStatus"),
+  authSignInButton: document.querySelector("#authSignInButton"),
+  authSignUpButton: document.querySelector("#authSignUpButton"),
   syncSplashLaterButton: document.querySelector("#syncSplashLaterButton"),
 };
 
@@ -482,15 +488,16 @@ function updateAuthUi() {
   if (currentUser) {
     elements.syncBanner.hidden = true;
     elements.authStatus.textContent = `${currentUser.email || "ログイン中"} として同期しています。`;
-    if (elements.signInButton) elements.signInButton.hidden = true;
+    if (elements.signOutButton) elements.signOutButton.hidden = false;
     if (elements.importLocalButton) elements.importLocalButton.hidden = localCount === 0;
     markSyncOnboardingSeen();
+    closeSyncSplash();
     return;
   }
 
   elements.syncBanner.hidden = false;
-  elements.authStatus.textContent = "Googleログインすると、スマホ2台やPCから同じ記録を見られます。";
-  if (elements.signInButton) elements.signInButton.hidden = false;
+  elements.authStatus.textContent = "メールでログインすると、スマホ2台やPCから同じ記録を見られます。";
+  if (elements.signOutButton) elements.signOutButton.hidden = true;
   if (elements.importLocalButton) elements.importLocalButton.hidden = true;
 }
 
@@ -510,6 +517,8 @@ function openSyncSplash() {
 function closeSyncSplash() {
   if (!elements.syncSplashModal) return;
   elements.syncSplashModal.hidden = true;
+  showAuthFormStatus("");
+  if (elements.authPassword) elements.authPassword.value = "";
 }
 
 function maybeOpenSyncSplash() {
@@ -528,18 +537,65 @@ function getAuthRedirectUrl() {
   return url.toString();
 }
 
-async function signInWithGoogle() {
+function getAuthFormCredentials() {
+  const email = elements.authEmail?.value.trim() || "";
+  const password = elements.authPassword?.value || "";
+  return { email, password };
+}
+
+function showAuthFormStatus(message) {
+  if (elements.authFormStatus) elements.authFormStatus.textContent = message;
+}
+
+async function signInWithEmail() {
   if (!supabaseClient) return;
+  const { email, password } = getAuthFormCredentials();
+  if (!email || !password) {
+    showAuthFormStatus("メールアドレスとパスワードを入力してください。");
+    return;
+  }
   markSyncOnboardingSeen();
-  const redirectTo = getAuthRedirectUrl();
-  const { error } = await supabaseClient.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo,
-    },
+  showAuthFormStatus("ログイン中...");
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    showAuthFormStatus(`ログインできませんでした: ${error.message || "メールアドレスかパスワードを確認してください"}`);
+  }
+}
+
+async function signUpWithEmail() {
+  if (!supabaseClient) return;
+  const { email, password } = getAuthFormCredentials();
+  if (!email || !password) {
+    showAuthFormStatus("メールアドレスとパスワードを入力してください。");
+    return;
+  }
+  if (password.length < 6) {
+    showAuthFormStatus("パスワードは6文字以上にしてください。");
+    return;
+  }
+  markSyncOnboardingSeen();
+  showAuthFormStatus("登録中...");
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: getAuthRedirectUrl() },
   });
   if (error) {
-    showSaveStatus(`Googleログインを開始できませんでした: ${error.message || "設定を確認してください"}`);
+    showAuthFormStatus(`登録できませんでした: ${error.message || "内容を確認してください"}`);
+    return;
+  }
+  if (!data.session) {
+    showAuthFormStatus("確認メールを送信しました。メール内のリンクを開いてログインを完了してください。");
+  } else {
+    showAuthFormStatus("");
+  }
+}
+
+async function signOutOfEmail() {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.auth.signOut();
+  if (error) {
+    showSaveStatus(`ログアウトに失敗しました: ${error.message || ""}`);
   }
 }
 
@@ -813,8 +869,8 @@ function renderRecords() {
 
   if (isSupabaseConfigured && !currentUser) {
     elements.records.innerHTML =
-      '<p class="empty">まだ記録はありません。Googleログインで同期すると、他端末の記録も表示できます。</p>' +
-      '<button class="button primary" id="loginFromRecordsButton" type="button">Googleでログイン</button>';
+      '<p class="empty">まだ記録はありません。メールでログインすると、他端末の記録も表示できます。</p>' +
+      '<button class="button primary" id="loginFromRecordsButton" type="button">メールでログイン</button>';
     return;
   }
 
@@ -1190,10 +1246,15 @@ function attachEvents() {
   elements.saveDraftButton?.addEventListener("click", () => saveDraft(true));
   elements.saveButton?.addEventListener("click", saveCurrentRecord);
   elements.clearButton?.addEventListener("click", clearForm);
-  elements.signInButton?.addEventListener("click", signInWithGoogle);
+  elements.signInButton?.addEventListener("click", openSyncSplash);
+  elements.signOutButton?.addEventListener("click", signOutOfEmail);
   elements.importLocalButton?.addEventListener("click", importLocalRecords);
   elements.openSyncSplashButton?.addEventListener("click", openSyncSplash);
-  elements.syncSplashLoginButton?.addEventListener("click", signInWithGoogle);
+  elements.authForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    signInWithEmail();
+  });
+  elements.authSignUpButton?.addEventListener("click", signUpWithEmail);
   elements.syncSplashLaterButton?.addEventListener("click", () => {
     markSyncOnboardingSeen();
     closeSyncSplash();
@@ -1254,7 +1315,7 @@ function attachEvents() {
 
   elements.records?.addEventListener("click", async (event) => {
     if (event.target.closest("#loginFromRecordsButton")) {
-      await signInWithGoogle();
+      openSyncSplash();
       return;
     }
 

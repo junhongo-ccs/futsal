@@ -1,6 +1,6 @@
 # Supabase同期セットアップ
 
-このアプリは、`config.json` がない場合は従来通りブラウザ内の `localStorage` に保存する。`config.json` にSupabase設定を入れると、GoogleログインとPostgreSQL保存に切り替わる。
+このアプリは、`config.json` がない場合は従来通りブラウザ内の `localStorage` に保存する。`config.json` にSupabase設定を入れると、メール・パスワードログインとPostgreSQL保存に切り替わる。
 
 ## 1. Supabaseプロジェクトを作る
 
@@ -22,9 +22,9 @@ Supabase DashboardのSQL Editorで [supabase/schema.sql](../supabase/schema.sql)
 - Row Level Security
 - ログイン中ユーザー本人の行だけを読める、書ける、消せるポリシー
 
-## 3. Google認証を有効にする
+## 3. メール認証を有効にする
 
-Supabase DashboardでGoogle providerを有効にする。
+Supabase DashboardのAuthenticationで「Email」providerが有効になっていることを確認する（デフォルトで有効）。
 
 設定するURL:
 
@@ -38,7 +38,7 @@ https://<username>.github.io/futsal/
 http://localhost:4173/
 ```
 
-Google Cloud Console側でもOAuthクライアントを作り、SupabaseのCallback URLを承認済みリダイレクトURIに入れる。
+個人・少人数での利用で確認メールの手間を省きたい場合は、Authentication設定の「Confirm email」をオフにすると、新規登録直後からログイン状態になる。オンのままにする場合はメール内のリンクを開くまでログインは完了しない。
 
 ## 4. config.jsonを作る
 
@@ -63,8 +63,8 @@ python3 -m http.server 4173
 
 確認すること:
 
-- Googleログインできる
+- メールアドレスとパスワードで新規登録・ログインできる
 - 途中保存が復元される
 - 記録すると `futsal_records` に保存される
-- スマホ2台やPCで同じGoogleアカウントにログインすると同じ記録が見える
+- スマホ2台やPCで同じアカウントにログインすると同じ記録が見える
 - この端末に残っていたローカル記録を「この端末の記録を取り込む」でクラウドへ移せる
