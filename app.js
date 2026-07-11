@@ -109,6 +109,7 @@ const elements = {
   userNav: document.querySelector("#userNav"),
   backToRecordsButton: document.querySelector("#backToRecordsButton"),
   backToDocsButton: document.querySelector("#backToDocsButton"),
+  closeUserButton: document.querySelector("#closeUserButton"),
   canvas: document.querySelector("#stateChart"),
   afterCanvas: document.querySelector("#afterStateChart"),
   bodyScore: document.querySelector("#bodyScore"),
@@ -1375,6 +1376,7 @@ function attachEvents() {
   elements.userNav?.addEventListener("click", () => navigate("#/user"));
   elements.backToRecordsButton?.addEventListener("click", () => navigate("#/records"));
   elements.backToDocsButton?.addEventListener("click", () => navigate("#/docs"));
+  elements.closeUserButton?.addEventListener("click", () => navigate("#/new"));
   elements.saveDraftButton?.addEventListener("click", () => saveDraft(true));
   elements.saveButton?.addEventListener("click", saveCurrentRecord);
   elements.clearButton?.addEventListener("click", clearForm);
