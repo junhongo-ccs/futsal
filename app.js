@@ -165,7 +165,6 @@ const elements = {
   authSignInButton: document.querySelector("#authSignInButton"),
   authSignUpButton: document.querySelector("#authSignUpButton"),
   syncSplashLaterButton: document.querySelector("#syncSplashLaterButton"),
-  setPasswordButton: document.querySelector("#setPasswordButton"),
   setPasswordModal: document.querySelector("#setPasswordModal"),
   setPasswordForm: document.querySelector("#setPasswordForm"),
   newPassword: document.querySelector("#newPassword"),
@@ -486,7 +485,6 @@ function updateAuthUi() {
   if (!isSupabaseConfigured) {
     if (elements.syncBanner) elements.syncBanner.hidden = true;
     if (elements.syncSplashModal) elements.syncSplashModal.hidden = true;
-    if (elements.setPasswordButton) elements.setPasswordButton.hidden = true;
     return;
   }
 
@@ -498,13 +496,11 @@ function updateAuthUi() {
     elements.authStatus.textContent = `${currentUser.email || "ログイン中"} として同期しています。`;
     if (elements.signOutButton) elements.signOutButton.hidden = false;
     if (elements.importLocalButton) elements.importLocalButton.hidden = localCount === 0;
-    if (elements.setPasswordButton) elements.setPasswordButton.hidden = false;
     markSyncOnboardingSeen();
     closeSyncSplash();
     return;
   }
 
-  if (elements.setPasswordButton) elements.setPasswordButton.hidden = true;
   elements.syncBanner.hidden = false;
   elements.authStatus.textContent = "メールでログインすると、スマホ2台やPCから同じ記録を見られます。";
   if (elements.signOutButton) elements.signOutButton.hidden = true;
@@ -1348,7 +1344,6 @@ function attachEvents() {
       closeSyncSplash();
     }
   });
-  elements.setPasswordButton?.addEventListener("click", openSetPasswordModal);
   elements.cancelSetPasswordButton?.addEventListener("click", closeSetPasswordModal);
   elements.setPasswordForm?.addEventListener("submit", (event) => {
     event.preventDefault();
